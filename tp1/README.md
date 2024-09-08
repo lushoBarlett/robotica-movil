@@ -2,13 +2,19 @@
 
 ## Instalación
 
+Ingresar al directorio `ejercicio5`.
+
+```shell
+cd ejercicio5/
+```
+
 Contar con `python3` e instalar los paquetes requeridos.
 
 ```shell
 pip install -r requirements.txt
 ```
 
-Descargar el dataset EuRoc disponible [acá](http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/machine_hall/MH_01_easy/MH_01_easy.zip). Luego colocar la carpeta mav0 dentro de tp1/ejercicio5.
+Descargar el dataset EuRoc disponible [acá](http://robotics.ethz.ch/~asl-datasets/ijrr_euroc_mav_dataset/machine_hall/MH_01_easy/MH_01_easy.zip). Luego colocar la carpeta mav0 dentro de `tp1/ejercicio5`.
 
 ## Ejecución
 
