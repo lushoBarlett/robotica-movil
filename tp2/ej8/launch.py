@@ -127,7 +127,7 @@ def generate_launch_description():
 
     declare_world_cmd = DeclareLaunchArgument(
         'world',
-        default_value='/dev_ws/world.model',
+        default_value=world,
         description='Full path to world model file to load')
 
     declare_robot_name_cmd = DeclareLaunchArgument(
