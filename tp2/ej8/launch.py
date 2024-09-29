@@ -45,7 +45,7 @@ def generate_launch_description():
     use_composition = LaunchConfiguration('use_composition')
     use_respawn = LaunchConfiguration('use_respawn')
 
-    world = '/dev_ws/world.model'
+    world_path = '/dev_ws/world.model'
 
     rviz_config_file = LaunchConfiguration('rviz_config_file')
     use_simulator = LaunchConfiguration('use_simulator')
@@ -127,7 +127,7 @@ def generate_launch_description():
 
     declare_world_cmd = DeclareLaunchArgument(
         'world',
-        default_value=world,
+        default_value=world_path,
         description='Full path to world model file to load')
 
     declare_robot_name_cmd = DeclareLaunchArgument(
