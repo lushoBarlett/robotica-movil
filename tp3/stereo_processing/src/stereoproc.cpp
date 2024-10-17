@@ -1,9 +1,16 @@
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/features2d.hpp>
 #include <vector>
+#include "stereoproc.hpp"
+#include "publisher.hpp"
 
 // Function to set up stereo camera matrices
 void setupStereoCameraMatrices(cv::Mat& D_left, cv::Mat& K_left, cv::Mat& R_left, cv::Mat& P_left,
@@ -120,9 +127,11 @@ void triangulate(cv::Mat P_left, cv::Mat P_right, std::vector<cv::Point2f> point
     }
 }
 
-int main() {
-    cv::Mat imgLeft = cv::imread("calibrationdata/left-0000.png", cv::COLOR_BGR2GRAY);
-    cv::Mat imgRight = cv::imread("calibrationdata/right-0000.png", cv::COLOR_BGR2GRAY);
+int main(int argc, char **argv) {
+    // Initialize the ROS2 system
+    rclcpp::init(argc, argv);
+    cv::Mat imgLeft = cv::imread("../../calibrationdata/left-0000.png", cv::COLOR_BGR2GRAY);
+    cv::Mat imgRight = cv::imread("../../calibrationdata/right-0000.png", cv::COLOR_BGR2GRAY);
     cv::Mat rectifiedLeft, rectifiedRight;
 
     cv::Mat D_left, K_left, R_left, P_left;
@@ -156,11 +165,8 @@ int main() {
     std::vector<cv::Point3d> points3D;
     triangulate(P_left, P_right, pointsLeft, pointsRight, &points3D);
 
-/* Print points
-    for (const auto& point : points3D) {
-        std::cout << "3D Point: " << point << std::endl;
-    }
-*/
+    // To publish the points in the topic /point_cloud uncomment this line
+    //publishContinuously(points3D);
 
 /*
     cv::Mat imgMatches;
@@ -190,6 +196,5 @@ int main() {
     cv::imshow("Rectified Right Image", rectifiedRight);
     cv::waitKey(0);
 */
-
-    return 0;
+    return 1;
 }
