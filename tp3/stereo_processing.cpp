@@ -3,6 +3,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/features2d.hpp>
+#include <opencv2/viz.hpp>
+#include <fstream>
 #include <vector>
 
 // Function to set up stereo camera matrices
@@ -40,7 +42,7 @@ void setupStereoCameraMatrices(cv::Mat& D_left, cv::Mat& K_left, cv::Mat& R_left
                                    -0.008937247467810473, -0.01637800687090375, 0.9998259280988044);
 }
 
-void rectify_images(const cv::Mat imgLeft, const cv::Mat imgRight, cv::Mat* rectifiedLeft, cv::Mat* rectifiedRight) {
+void rectify_images(const cv::Mat imgLeft, const cv::Mat imgRight, cv::Mat* rectifiedLeft, cv::Mat* rectifiedRight, cv::Mat* Q) {
     if (imgLeft.empty() || imgRight.empty()) {
         std::cout << "Error: Could not load images." << std::endl;
         return;
@@ -53,12 +55,12 @@ void rectify_images(const cv::Mat imgLeft, const cv::Mat imgRight, cv::Mat* rect
     setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T, R);
    
     // Output matrices for rectification
-    cv::Mat R1, R2, P1, P2, Q;
+    cv::Mat R1, R2, P1, P2;
     cv::Size imageSize = imgLeft.size();
     cv::stereoRectify(K_left, D_left, 
                       K_right, D_right, 
                       imageSize, R, T, 
-                      R1, R2, P1, P2, Q);
+                      R1, R2, P1, P2, *Q);
 
     // Rectification maps
     cv::Mat map1Left, map2Left, map1Right, map2Right;
@@ -116,13 +118,109 @@ void triangulate(cv::Mat P_left, cv::Mat P_right, std::vector<cv::Point2f> point
     for (int i = 0; i < points4D.cols; i++) {
         cv::Mat x = points4D.col(i);
         x /= x.at<float>(3);
+
+        // if the point is too far away, ignore it
+        if (cv::norm(x) > 1000)
+            continue;
+
         points3D->push_back(cv::Point3d(x.at<float>(0), x.at<float>(1), x.at<float>(2)));
     }
 }
 
+void filter_correspondences(std::vector<cv::Point2f>& pointsLeft, std::vector<cv::Point2f>& pointsRight, std::vector<cv::Point3d>& points3D) {
+    cv::Mat H = cv::findHomography(pointsLeft, pointsRight, cv::RANSAC);
+
+    // Transform points from left image to right image
+    std::vector<cv::Point2f> transformedPoints;
+    cv::perspectiveTransform(pointsLeft, transformedPoints, H);
+
+    // Display transformed points
+    cv::Mat imgLeft = cv::imread("data/left-0000.png", cv::IMREAD_COLOR);
+    cv::Mat imgRight = cv::imread("data/right-0000.png", cv::IMREAD_COLOR);
+
+    for (const auto& point : transformedPoints) {
+        cv::circle(imgRight, point, 3, cv::Scalar(0, 0, 255), cv::FILLED);
+    }
+
+    cv::imshow("Transformed points", imgRight);
+    cv::waitKey(0);
+}
+
+void read_ground_truth_positions(std::vector<cv::Point3d>& outpositions) {
+    std::string filename = "data/ground_truth.csv";
+    std::ifstream file(filename);
+
+    if (!file.is_open()) {
+        std::cout << "Error: Could not open file." << std::endl;
+        return;
+    }
+
+    std::string line;
+    for (int i = 0; std::getline(file, line); i++) {
+        if (i == 0)
+            continue;
+
+        std::stringstream ss(line);
+        std::string token;
+
+        std::vector<double> values;
+        while (std::getline(ss, token, '\t'))
+            values.push_back(std::stod(token));
+
+        outpositions.push_back(cv::Point3d(values[1], values[2], values[3]));
+    }
+}
+
+void feature_mapping(const std::vector<cv::Point3d>& points3D) {
+    cv::viz::Viz3d window("3D Plot");
+    cv::viz::WCloud cloudWidget(points3D, cv::viz::Color::green());
+    window.showWidget("Cloud", cloudWidget);
+    window.spin();
+}
+
+void compute_disparity_map(cv::Mat& disparityMap) {
+    cv::Mat imgLeft = cv::imread("data/left-0000.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat imgRight = cv::imread("data/right-0000.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat rectifiedLeft, rectifiedRight;
+
+    cv::Mat Q;
+    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight, &Q);
+
+    cv::Mat disparityMapNotNormalized;
+    cv::Ptr<cv::StereoBM> stereo = cv::StereoBM::create(16, 9);
+    stereo->compute(rectifiedLeft, rectifiedRight, disparityMapNotNormalized);
+
+    cv::normalize(disparityMapNotNormalized, disparityMap, 0, 255, cv::NORM_MINMAX, CV_8U);
+
+    cv::imshow("Disparity Map", disparityMap);
+    cv::waitKey(0);
+}
+
+void dense_reconstruction(cv::Mat& disparityMap, std::vector<cv::Point3d>& points3D) {
+    cv::Mat imgLeft = cv::imread("data/left-0000.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat imgRight = cv::imread("data/right-0000.png", cv::IMREAD_GRAYSCALE);
+    cv::Mat rectifiedLeft, rectifiedRight;
+
+    cv::Mat Q;
+    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight, &Q);
+
+    cv::reprojectImageTo3D(disparityMap, points3D, Q);
+
+    cv::viz::Viz3d window("3D Plot");
+    cv::viz::WCloud cloudWidget(points3D, cv::viz::Color::green());
+    window.showWidget("Cloud", cloudWidget);
+    window.spin();
+}
+
+void dense_mapping(const cv::Mat imgLeft, const cv::Mat imgRight) {
+}
+
+void estimate_pose(const cv::Mat imgLeft, const cv::Mat imgRight) {
+}
+
 int main() {
-    cv::Mat imgLeft = cv::imread("calibrationdata/left-0000.png", cv::COLOR_BGR2GRAY);
-    cv::Mat imgRight = cv::imread("calibrationdata/right-0000.png", cv::COLOR_BGR2GRAY);
+    cv::Mat imgLeft = cv::imread("data/left-0000.png", cv::COLOR_BGR2GRAY);
+    cv::Mat imgRight = cv::imread("data/right-0000.png", cv::COLOR_BGR2GRAY);
     cv::Mat rectifiedLeft, rectifiedRight;
 
     cv::Mat D_left, K_left, R_left, P_left;
@@ -131,7 +229,8 @@ int main() {
 
     setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T, R);
 
-    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight);
+    cv::Mat Q;
+    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight, &Q);
 
     std::vector<cv::KeyPoint> keypoints1;
     std::vector<cv::KeyPoint> keypoints2;
@@ -155,6 +254,23 @@ int main() {
 
     std::vector<cv::Point3d> points3D;
     triangulate(P_left, P_right, pointsLeft, pointsRight, &points3D);
+
+    filter_correspondences(pointsLeft, pointsRight, points3D);
+
+    std::vector<cv::Point3d> positions;
+    read_ground_truth_positions(positions);
+
+    feature_mapping(points3D);
+
+    cv::Mat disparityMap;
+    compute_disparity_map(disparityMap);
+
+    std::vector<cv::Point3d> densePoints3D;
+    dense_reconstruction(disparityMap, densePoints3D);
+
+    // dense_mapping(rectifiedLeft, rectifiedRight);
+
+    // estimate_pose(rectifiedLeft, rectifiedRight);
 
 /* Print points
     for (const auto& point : points3D) {
