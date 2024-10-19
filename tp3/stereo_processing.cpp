@@ -146,7 +146,20 @@ void filter_correspondences(std::vector<cv::Point2f>& pointsLeft, std::vector<cv
     cv::waitKey(0);
 }
 
-void read_ground_truth_positions(std::vector<cv::Point3d>& outpositions) {
+cv::Mat quat2rot(cv::Vec4d q) {
+    double w = q[0];
+    double x = q[1];
+    double y = q[2];
+    double z = q[3];
+
+    cv::Mat R = (cv::Mat_<double>(3, 3) << 1 - 2 * y * y - 2 * z * z, 2 * x * y - 2 * z * w, 2 * x * z + 2 * y * w,
+                                           2 * x * y + 2 * z * w, 1 - 2 * x * x - 2 * z * z, 2 * y * z - 2 * x * w,
+                                           2 * x * z - 2 * y * w, 2 * y * z + 2 * x * w, 1 - 2 * x * x - 2 * y * y);
+
+    return R;
+}
+
+void read_ground_truth_positions(std::vector<cv::Mat>& outposes) {
     std::string filename = "data/ground_truth.csv";
     std::ifstream file(filename);
 
@@ -154,6 +167,9 @@ void read_ground_truth_positions(std::vector<cv::Point3d>& outpositions) {
         std::cout << "Error: Could not open file." << std::endl;
         return;
     }
+
+    std::vector<cv::Point3d> outpos;
+    std::vector<cv::Mat> outrot;
 
     std::string line;
     for (int i = 0; std::getline(file, line); i++) {
@@ -164,10 +180,27 @@ void read_ground_truth_positions(std::vector<cv::Point3d>& outpositions) {
         std::string token;
 
         std::vector<double> values;
-        while (std::getline(ss, token, '\t'))
+        while (std::getline(ss, token, ','))
             values.push_back(std::stod(token));
 
-        outpositions.push_back(cv::Point3d(values[1], values[2], values[3]));
+        outpos.push_back(cv::Point3d(values[1], values[2], values[3]));
+        outrot.push_back(quat2rot(cv::Vec4d(values[4], values[5], values[6], values[7])));
+    }
+
+    file.close();
+
+    for (int i = 0; i < outpos.size(); i++) {
+        cv::Mat pose = cv::Mat::eye(4, 4, CV_64F);
+
+        for (int j = 0; j < 3; j++)
+            for (int k = 0; k < 3; k++)
+                pose.at<double>(j, k) = outrot[i].at<double>(j, k);
+
+        pose.at<double>(0, 3) = outpos[i].x;
+        pose.at<double>(1, 3) = outpos[i].y;
+        pose.at<double>(2, 3) = outpos[i].z;
+
+        outposes.push_back(pose);
     }
 }
 
@@ -196,7 +229,7 @@ void compute_disparity_map(cv::Mat& disparityMap) {
     cv::waitKey(0);
 }
 
-void dense_reconstruction(cv::Mat& disparityMap, std::vector<cv::Point3d>& points3D) {
+void dense_reconstruction(cv::Mat& disparityMap, cv::Mat& points3D) {
     cv::Mat imgLeft = cv::imread("data/left-0000.png", cv::IMREAD_GRAYSCALE);
     cv::Mat imgRight = cv::imread("data/right-0000.png", cv::IMREAD_GRAYSCALE);
     cv::Mat rectifiedLeft, rectifiedRight;
@@ -207,15 +240,61 @@ void dense_reconstruction(cv::Mat& disparityMap, std::vector<cv::Point3d>& point
     cv::reprojectImageTo3D(disparityMap, points3D, Q);
 
     cv::viz::Viz3d window("3D Plot");
-    cv::viz::WCloud cloudWidget(points3D, cv::viz::Color::green());
+    std::vector<cv::Point3d> points3DVector;
+    for (int i = 0; i < points3D.rows; i++) {
+        for (int j = 0; j < points3D.cols; j++) {
+            cv::Point3d point = points3D.at<cv::Point3d>(i, j);
+            if (cv::norm(point) < 1000) {
+                points3DVector.push_back(point);
+            }
+        }
+    }
+    cv::viz::WCloud cloudWidget(points3DVector, cv::viz::Color::green());
     window.showWidget("Cloud", cloudWidget);
     window.spin();
 }
 
-void dense_mapping(const cv::Mat imgLeft, const cv::Mat imgRight) {
+void dense_mapping() {
+    // TODO
 }
 
-void estimate_pose(const cv::Mat imgLeft, const cv::Mat imgRight) {
+void estimate_pose(
+    const std::vector<cv::Point2f>& pointsLeft,
+    const std::vector<cv::Point2f>& pointsRight,
+    const cv::Mat& K_left, const cv::Mat& K_right,
+    const cv::Mat& D_left, const cv::Mat& D_right
+) {
+    std::vector<cv::Point2f> pointsLeftUndistorted, pointsRightUndistorted;
+
+    cv::undistortPoints(pointsLeft, pointsLeftUndistorted, K_left, D_left);
+    cv::undistortPoints(pointsRight, pointsRightUndistorted, K_right, D_right);
+
+    cv::Mat E = cv::findEssentialMat(pointsLeftUndistorted, pointsRightUndistorted, cv::Mat::eye(3, 3, CV_64F), cv::RANSAC);
+
+    cv::Mat R, T;
+
+    cv::recoverPose(E, pointsLeftUndistorted, pointsRightUndistorted, cv::Mat::eye(3, 3, CV_64F), R, T);
+
+    std::cout << "Rotation matrix: " << R << std::endl;
+    std::cout << "Translation vector: " << T << std::endl;
+}
+
+void to_homogenous_coords(const std::vector<cv::Point3d>& points3D, std::vector<cv::Mat>& points3DHomogenous) {
+    for (const auto& point : points3D) {
+        cv::Mat pointHomogenous = (cv::Mat_<double>(4, 1) << point.x, point.y, point.z, 1);
+        points3DHomogenous.push_back(pointHomogenous);
+    }
+}
+
+void from_homogenous_coords(const std::vector<cv::Mat>& points3DHomogenous, std::vector<cv::Point3d>& points3D) {
+    for (const auto& point : points3DHomogenous) {
+        cv::Point3d point3D;
+        double w = point.at<double>(3, 0);
+        point3D.x = point.at<double>(0, 0) / w;
+        point3D.y = point.at<double>(1, 0) / w;
+        point3D.z = point.at<double>(2, 0) / w;
+        points3D.push_back(point3D);
+    }
 }
 
 int main() {
@@ -257,55 +336,28 @@ int main() {
 
     filter_correspondences(pointsLeft, pointsRight, points3D);
 
-    std::vector<cv::Point3d> positions;
-    read_ground_truth_positions(positions);
+    std::vector<cv::Mat> poses;
+    read_ground_truth_positions(poses);
+
+    std::vector<cv::Mat> points3DHomogenous;
+    to_homogenous_coords(points3D, points3DHomogenous);
+
+    for (auto& pointH : points3DHomogenous)
+        pointH = poses[0] * pointH;
+
+    std::vector<cv::Point3d> points3DMoved;
+    from_homogenous_coords(points3DHomogenous, points3DMoved);
 
     feature_mapping(points3D);
+    feature_mapping(points3DMoved);
 
     cv::Mat disparityMap;
     compute_disparity_map(disparityMap);
 
-    std::vector<cv::Point3d> densePoints3D;
+    cv::Mat densePoints3D;
     dense_reconstruction(disparityMap, densePoints3D);
 
-    // dense_mapping(rectifiedLeft, rectifiedRight);
+    // dense_mapping();
 
-    // estimate_pose(rectifiedLeft, rectifiedRight);
-
-/* Print points
-    for (const auto& point : points3D) {
-        std::cout << "3D Point: " << point << std::endl;
-    }
-*/
-
-/*
-    cv::Mat imgMatches;
-    cv::drawMatches(rectifiedLeft, keypoints1, rectifiedRight, keypoints2, matches, imgMatches, cv::Scalar::all(-1),
-                    cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-
-    cv::imshow("Matches", imgMatches);
-    cv::waitKey(0);
-*/
-
-/* Draw keypoints on the image
-    cv::Mat keypointImageLeft;
-    cv::drawKeypoints(rectifiedLeft, keypoints1, keypointImageLeft, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-
-    cv::Mat keypointImageRight;
-    cv::drawKeypoints(rectifiedRight, keypoints2, keypointImageRight, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-
-    cv::imshow("Keypoints left", keypointImageLeft);
-    cv::imshow("Keypoints right", keypointImageRight);
-    cv::waitKey(0);
-*/
-
-/* Display rectified images
-    cv::imshow("Left Image", imgLeft);
-    cv::imshow("Rectified Left Image", rectifiedLeft);
-    cv::imshow("Right Image", imgRight);
-    cv::imshow("Rectified Right Image", rectifiedRight);
-    cv::waitKey(0);
-*/
-
-    return 0;
+    estimate_pose(pointsLeft, pointsRight, K_left, K_right, D_left, D_right);
 }
