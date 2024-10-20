@@ -10,7 +10,7 @@
 #include <opencv2/features2d.hpp>
 #include <vector>
 #include "stereoproc.hpp"
-#include "publisher.hpp"
+//#include "publisher.hpp"
 
 // Function to set up stereo camera matrices
 void setupStereoCameraMatrices(cv::Mat& D_left, cv::Mat& K_left, cv::Mat& R_left, cv::Mat& P_left,
@@ -123,10 +123,52 @@ void triangulate(cv::Mat P_left, cv::Mat P_right, std::vector<cv::Point2f> point
     for (int i = 0; i < points4D.cols; i++) {
         cv::Mat x = points4D.col(i);
         x /= x.at<float>(3);
+        
+        if (cv::norm(x) > 1000)
+            continue;
+        
         points3D->push_back(cv::Point3d(x.at<float>(0), x.at<float>(1), x.at<float>(2)));
     }
 }
 
+std::vector<cv::Point3d> triangulateKeyPoints(cv::Mat imgLeft, cv::Mat imgRight) {
+    cv::Mat rectifiedLeft, rectifiedRight;
+
+    cv::Mat D_left, K_left, R_left, P_left;
+    cv::Mat D_right, K_right, R_right, P_right;
+    cv::Mat T, R;
+
+    setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T, R);
+
+    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight);
+
+    std::vector<cv::KeyPoint> keypoints1;
+    std::vector<cv::KeyPoint> keypoints2;
+    detect_keypoints(rectifiedLeft, rectifiedRight, &keypoints1, &keypoints2);
+
+    cv::Mat descriptors1;
+    cv::Mat descriptors2;
+    compute_descriptors(rectifiedLeft, rectifiedRight, keypoints1, keypoints2, &descriptors1, &descriptors2);
+
+    std::vector<cv::DMatch> matches;
+    match_descriptors(descriptors1, descriptors2, &matches);
+
+    // Filter corresponding keypoints from good matches
+    std::vector<cv::Point2f> pointsLeft, pointsRight;
+
+    for (const auto& match : matches) {
+        // Use the queryIdx for the left image and trainIdx for the right image
+        pointsLeft.push_back(keypoints1[match.queryIdx].pt);
+        pointsRight.push_back(keypoints2[match.trainIdx].pt);
+    }
+
+    std::vector<cv::Point3d> points3D;
+    triangulate(P_left, P_right, pointsLeft, pointsRight, &points3D);
+
+    return points3D;
+}
+
+/*
 int main(int argc, char **argv) {
     // Initialize the ROS2 system
     rclcpp::init(argc, argv);
@@ -168,33 +210,6 @@ int main(int argc, char **argv) {
     // To publish the points in the topic /point_cloud uncomment this line
     //publishContinuously(points3D);
 
-/*
-    cv::Mat imgMatches;
-    cv::drawMatches(rectifiedLeft, keypoints1, rectifiedRight, keypoints2, matches, imgMatches, cv::Scalar::all(-1),
-                    cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-
-    cv::imshow("Matches", imgMatches);
-    cv::waitKey(0);
-*/
-
-/* Draw keypoints on the image
-    cv::Mat keypointImageLeft;
-    cv::drawKeypoints(rectifiedLeft, keypoints1, keypointImageLeft, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-
-    cv::Mat keypointImageRight;
-    cv::drawKeypoints(rectifiedRight, keypoints2, keypointImageRight, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-
-    cv::imshow("Keypoints left", keypointImageLeft);
-    cv::imshow("Keypoints right", keypointImageRight);
-    cv::waitKey(0);
-*/
-
-/* Display rectified images
-    cv::imshow("Left Image", imgLeft);
-    cv::imshow("Rectified Left Image", rectifiedLeft);
-    cv::imshow("Right Image", imgRight);
-    cv::imshow("Rectified Right Image", rectifiedRight);
-    cv::waitKey(0);
-*/
     return 1;
 }
+*/

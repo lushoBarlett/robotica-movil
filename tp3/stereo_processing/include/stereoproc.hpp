@@ -24,4 +24,6 @@ void match_descriptors(cv::Mat descriptors1, cv::Mat descriptors2, std::vector<c
 // Function to triangulate 3D points from matched 2D points
 void triangulate(cv::Mat P_left, cv::Mat P_right, std::vector<cv::Point2f> pointsLeft, std::vector<cv::Point2f> pointsRight, std::vector<cv::Point3d>* points3D);
 
+std::vector<cv::Point3d> triangulateKeyPoints(cv::Mat imgLeft, cv::Mat imgRight);
+
 #endif // STEREOPROC_HPP

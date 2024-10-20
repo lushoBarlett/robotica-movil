@@ -1,25 +1,38 @@
 cmake_minimum_required(VERSION 3.5)
-project(stereoproc)
+project(bagreader)
 
+# Find required packages
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)  # For cv_bridge
+find_package(OpenCV REQUIRED)
+find_package(rosbag2_cpp REQUIRED)  # For reading/writing ROS bags
+find_package(rosbag2_storage REQUIRED)  # For storage options in ROS bags
 find_package(pcl_conversions REQUIRED)
 find_package(PCL REQUIRED)
-find_package(OpenCV REQUIRED)
 
+
+# Include directories
 include_directories(include)
 
-add_executable(stereoproc src/stereoproc.cpp src/publisher.cpp)
+# Add executable
+add_executable(bagreader src/bagreader.cpp src/stereoproc.cpp)
 
-ament_target_dependencies(stereoproc
+# Link dependencies
+ament_target_dependencies(bagreader
     rclcpp
     sensor_msgs
+    cv_bridge  # For cv_bridge functionalities
+    rosbag2_cpp  # For rosbag2_cpp functionalities
+    rosbag2_storage  # For rosbag2_storage functionalities
     pcl_conversions
     PCL
 )
 
-target_link_libraries(stereoproc ${OpenCV_LIBS})
+# Link OpenCV libraries
+target_link_libraries(bagreader ${OpenCV_LIBS})
 
+# Install targets
 install(TARGETS
-    stereoproc
+    bagreader
     DESTINATION lib/${PROJECT_NAME})
