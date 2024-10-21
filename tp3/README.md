@@ -1,6 +1,6 @@
 # TP3
 
-Para poder correr el programa, se debe ejecutar el siguiente comando:
+Para poder correr el programa, se debe ingresar a la carpeta `stereo_processing` y ejecutar el siguiente comando:
 
 ```bash
 mkdir build && cd build
