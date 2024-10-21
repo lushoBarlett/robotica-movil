@@ -22,23 +22,18 @@
 #include <sstream>
 #include <iomanip>
 #include <vector>
+#include <functional>
 #include "stereoproc.hpp"
+#include "bagreader.hpp"
 
-// Struct to hold pose information
-struct Pose {
-    double timestamp;
-    // Add fields for position and orientation (e.g., x, y, z, quaternion, etc.)
-    double x, y, z, qx, qy, qz, qw;
-};
-
-void to_homogenous_coords(const std::vector<cv::Point3d>& points3D, std::vector<cv::Mat>& points3DHomogenous) {
+static void to_homogenous_coords(const std::vector<cv::Point3d>& points3D, std::vector<cv::Mat>& points3DHomogenous) {
     for (const auto& point : points3D) {
         cv::Mat pointHomogenous = (cv::Mat_<double>(4, 1) << point.x, point.y, point.z, 1);
         points3DHomogenous.push_back(pointHomogenous);
     }
 }
 
-void from_homogenous_coords(const std::vector<cv::Mat>& points3DHomogenous, std::vector<cv::Point3d>& points3D) {
+static void from_homogenous_coords(const std::vector<cv::Mat>& points3DHomogenous, std::vector<cv::Point3d>& points3D) {
     for (const auto& point : points3DHomogenous) {
         cv::Point3d point3D;
         float w = point.at<float>(3, 0);
@@ -49,7 +44,7 @@ void from_homogenous_coords(const std::vector<cv::Mat>& points3DHomogenous, std:
     }
 }
 
-cv::Mat pose2rot(Pose pose) {
+static cv::Mat pose2rot(Pose pose) {
     double w = pose.qw;
     double x = pose.qx;
     double y = pose.qy;
@@ -62,7 +57,7 @@ cv::Mat pose2rot(Pose pose) {
     return R;
 }
 
-cv::Mat poseToTransformationMatrix(const Pose pose) {
+static cv::Mat poseToTransformationMatrix(const Pose pose) {
     // Create a 4x4 identity matrix
     cv::Mat transformation_matrix = cv::Mat::eye(4, 4, CV_32F);
 
@@ -78,12 +73,11 @@ cv::Mat poseToTransformationMatrix(const Pose pose) {
     transformation_matrix.at<float>(1, 3) = pose.y;
     transformation_matrix.at<float>(2, 3) = pose.z;
 
-    printMat(transformation_matrix);
     return transformation_matrix;
 }
 
 // Function to read the CSV file and store the poses
-std::vector<Pose> readGroundTruthCSV(const std::string& csv_file) {
+static std::vector<Pose> readGroundTruthCSV(const std::string& csv_file) {
     std::ifstream file(csv_file);
     std::string line;
     std::vector<Pose> poses;
@@ -93,14 +87,12 @@ std::vector<Pose> readGroundTruthCSV(const std::string& csv_file) {
         Pose pose;
         char separator;
 
-        // Assuming CSV format: timestamp, x, y, z, qx, qy, qz, qw
+        // Assuming CSV format: timestamp, x, y, z, qw, qx, qy, qz
         ss >> pose.timestamp >> separator >> pose.x >> separator >> pose.y >> separator
            >> pose.z >> separator >> pose.qw >> separator >> pose.qx >> separator >> pose.qy >> separator
            >> pose.qz;
         
         pose.timestamp = static_cast<double>(pose.timestamp) / 1e9;
-
-        std::cout << std::fixed << std::setprecision(9) << "Timestamp (seconds): " << pose.timestamp << "\n";
 
         poses.push_back(pose);
     }
@@ -109,8 +101,8 @@ std::vector<Pose> readGroundTruthCSV(const std::string& csv_file) {
 }
 
 // Function to find the closest pose for a given ROS timestamp in seconds
-bool findClosestPose(const std::vector<Pose> poses, double ros_time_seconds, double tolerance, Pose* closest_pose) {
-    double min_diff = std::numeric_limits<double>::max();  // Initialize with a large value
+static bool findClosestPose(const std::vector<Pose> poses, double ros_time_seconds, double tolerance, Pose* closest_pose) {
+    double min_diff = std::numeric_limits<double>::max();
 
     for (const auto& pose : poses) {
         double time_diff = std::fabs(pose.timestamp - ros_time_seconds);
@@ -125,7 +117,7 @@ bool findClosestPose(const std::vector<Pose> poses, double ros_time_seconds, dou
     return (min_diff <= tolerance);
 }
 
-sensor_msgs::msg::PointCloud2 points3DtoCloudMsg(const std::vector<cv::Point3d>& points3D) {
+static sensor_msgs::msg::PointCloud2 points3DtoCloudMsg(const std::vector<cv::Point3d>& points3D) {
     pcl::PointCloud<pcl::PointXYZ> cloud;
     cloud.width = points3D.size();
     cloud.height = 1;
@@ -145,7 +137,7 @@ sensor_msgs::msg::PointCloud2 points3DtoCloudMsg(const std::vector<cv::Point3d>&
     return cloud_msg;
 }
 
-int main(int argc, char **argv)
+void map_rosbag(int argc, char **argv, Point3DFunction func)
 {
     // Initialize ROS 2
     rclcpp::init(argc, argv);
@@ -159,8 +151,8 @@ int main(int argc, char **argv)
 
     // Set storage options and path to your ROS bag file
     rosbag2_storage::StorageOptions storage_options;
-    storage_options.uri = "../data/ros2.bag2";  // Specify your ROS 2 bag file here
-    storage_options.storage_id = "sqlite3";  // The default storage format is SQLite3
+    storage_options.uri = "../data/ros2.bag2";
+    storage_options.storage_id = "sqlite3";
 
     // Open the ROS bag file
     reader.open(storage_options);
@@ -215,9 +207,10 @@ int main(int argc, char **argv)
                     continue;
                 }
 
+                std::vector<cv::Point3d> fun(cv::Mat img1, cv::Mat img2);
                 cv::Mat transformation = poseToTransformationMatrix(closest_pose);
 
-                std::vector<cv::Point3d> points3D = triangulateKeyPoints(image_cam0, image_cam1);
+                std::vector<cv::Point3d> points3D = func(image_cam0, image_cam1);
 
                 std::vector<cv::Mat> points3DHomogenous;
                 to_homogenous_coords(points3D, points3DHomogenous);
@@ -234,11 +227,6 @@ int main(int argc, char **argv)
                 sensor_msgs::msg::PointCloud2 cloud_msg = points3DtoCloudMsg(points3DMoved);
 
                 publisher->publish(cloud_msg);
-
-                // Display the images (optional)
-                //cv::imshow("Image from /cam0/image_raw", image_cam0);
-                //cv::imshow("Image from /cam1/image_raw", image_cam1);
-                //cv::waitKey(0);  // Wait for key press before proceeding
             } else {
                 // If timestamps do not match, log the mismatch
                 RCLCPP_INFO(node->get_logger(), "Timestamp mismatch: cam0 = %f, cam1 = %f", timestamp_cam0.seconds(), timestamp_cam1.seconds());
@@ -252,5 +240,5 @@ int main(int argc, char **argv)
 
     // Clean up and shutdown
     rclcpp::shutdown();
-    return 0;
+    return;
 }

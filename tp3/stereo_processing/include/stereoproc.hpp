@@ -2,27 +2,22 @@
 #define STEREOPROC_HPP
 
 #include <opencv2/opencv.hpp>
-#include <vector>
 
-// Function to set up stereo camera matrices
-void setupStereoCameraMatrices(cv::Mat& D_left, cv::Mat& K_left, cv::Mat& R_left, cv::Mat& P_left,
-                               cv::Mat& D_right, cv::Mat& K_right, cv::Mat& R_right, cv::Mat& P_right,
-                               cv::Mat& T, cv::Mat& R);
+// The functions compute the whole process and show the results
+void rectifiyng_process(cv::Mat imgLeft, cv::Mat imgRight);
 
-// Function to rectify stereo images
-void rectify_images(const cv::Mat imgLeft, const cv::Mat imgRight, cv::Mat* rectifiedLeft, cv::Mat* rectifiedRight);
+void keypoints_process(cv::Mat imgLeft, cv::Mat imgRight);
 
-// Function to detect keypoints in images
-void detect_keypoints(const cv::Mat imgLeft, const cv::Mat imgRight, std::vector<cv::KeyPoint>* keypoint1, std::vector<cv::KeyPoint>* keypoint2);
+void matching_process(cv::Mat imgLeft, cv::Mat imgRight);
 
-// Function to compute descriptors for keypoints
-void compute_descriptors(const cv::Mat imgLeft, const cv::Mat imgRight, std::vector<cv::KeyPoint> keypoint1, std::vector<cv::KeyPoint> keypoint2, cv::Mat* descriptors1, cv::Mat* descriptors2);
+void homography_process(cv::Mat imgLeft, cv::Mat imgRight);
 
-// Function to match descriptors between two images
-void match_descriptors(cv::Mat descriptors1, cv::Mat descriptors2, std::vector<cv::DMatch>* matches);
+void disparity_map_process(cv::Mat imgLeft, cv::Mat imgRight);
 
-// Function to triangulate 3D points from matched 2D points
-void triangulate(cv::Mat P_left, cv::Mat P_right, std::vector<cv::Point2f> pointsLeft, std::vector<cv::Point2f> pointsRight, std::vector<cv::Point3d>* points3D);
+void pose_estimation_process(cv::Mat imgLeft, cv::Mat imgRight);
+
+// These functions calculate a vector of 3D points given 2 images with different methods
+std::vector<cv::Point3d> dense_point_cloud(cv::Mat imgLeft, cv::Mat imgRight);
 
 std::vector<cv::Point3d> triangulateKeyPoints(cv::Mat imgLeft, cv::Mat imgRight);
 

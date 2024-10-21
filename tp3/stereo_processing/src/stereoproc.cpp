@@ -8,12 +8,13 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/features2d.hpp>
+#include <opencv2/viz.hpp>
+#include <fstream>
 #include <vector>
 #include "stereoproc.hpp"
-//#include "publisher.hpp"
 
 // Function to set up stereo camera matrices
-void setupStereoCameraMatrices(cv::Mat& D_left, cv::Mat& K_left, cv::Mat& R_left, cv::Mat& P_left,
+static void setupStereoCameraMatrices(cv::Mat& D_left, cv::Mat& K_left, cv::Mat& R_left, cv::Mat& P_left,
                                cv::Mat& D_right, cv::Mat& K_right, cv::Mat& R_right, cv::Mat& P_right,
                                cv::Mat& T, cv::Mat& R) {
     // Left camera parameters
@@ -47,7 +48,7 @@ void setupStereoCameraMatrices(cv::Mat& D_left, cv::Mat& K_left, cv::Mat& R_left
                                    -0.008937247467810473, -0.01637800687090375, 0.9998259280988044);
 }
 
-void rectify_images(const cv::Mat imgLeft, const cv::Mat imgRight, cv::Mat* rectifiedLeft, cv::Mat* rectifiedRight) {
+static void rectify_images(const cv::Mat imgLeft, const cv::Mat imgRight, cv::Mat* rectifiedLeft, cv::Mat* rectifiedRight, cv::Mat* Q) {
     if (imgLeft.empty() || imgRight.empty()) {
         std::cout << "Error: Could not load images." << std::endl;
         return;
@@ -60,12 +61,12 @@ void rectify_images(const cv::Mat imgLeft, const cv::Mat imgRight, cv::Mat* rect
     setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T, R);
    
     // Output matrices for rectification
-    cv::Mat R1, R2, P1, P2, Q;
+    cv::Mat R1, R2, P1, P2;
     cv::Size imageSize = imgLeft.size();
     cv::stereoRectify(K_left, D_left, 
                       K_right, D_right, 
                       imageSize, R, T, 
-                      R1, R2, P1, P2, Q);
+                      R1, R2, P1, P2, *Q);
 
     // Rectification maps
     cv::Mat map1Left, map2Left, map1Right, map2Right;
@@ -79,7 +80,7 @@ void rectify_images(const cv::Mat imgLeft, const cv::Mat imgRight, cv::Mat* rect
     cv::remap(imgRight, *rectifiedRight, map1Right, map2Right, cv::INTER_LINEAR);
 }
 
-void detect_keypoints(const cv::Mat imgLeft, const cv::Mat imgRight, std::vector<cv::KeyPoint>* keypoint1, std::vector<cv::KeyPoint>* keypoint2) {
+static void detect_keypoints(const cv::Mat imgLeft, const cv::Mat imgRight, std::vector<cv::KeyPoint>* keypoint1, std::vector<cv::KeyPoint>* keypoint2) {
     int threshold = 30;
     bool nonmaxSuppression = true;
     cv::Ptr<cv::FastFeatureDetector> fastDetector = cv::FastFeatureDetector::create(threshold, nonmaxSuppression);
@@ -88,7 +89,7 @@ void detect_keypoints(const cv::Mat imgLeft, const cv::Mat imgRight, std::vector
     fastDetector->detect(imgRight, *keypoint2);
 }
 
-void compute_descriptors(const cv::Mat imgLeft, const cv::Mat imgRight, std::vector<cv::KeyPoint> keypoint1, std::vector<cv::KeyPoint> keypoint2, cv::Mat* descriptors1, cv::Mat* descriptors2) {
+static void compute_descriptors(const cv::Mat imgLeft, const cv::Mat imgRight, std::vector<cv::KeyPoint> keypoint1, std::vector<cv::KeyPoint> keypoint2, cv::Mat* descriptors1, cv::Mat* descriptors2) {
     // Create an ORB keypoint detector and descriptor extractor
     int maxKeypoints = 1000; // Maximum number of keypoints to retain
     cv::Ptr<cv::ORB> orb = cv::ORB::create(maxKeypoints);
@@ -98,14 +99,14 @@ void compute_descriptors(const cv::Mat imgLeft, const cv::Mat imgRight, std::vec
     orb->compute(imgRight, keypoint2, *descriptors2);
 }
 
-void match_descriptors(cv::Mat descriptors1, cv::Mat descriptors2, std::vector<cv::DMatch>* matches) {
+static void match_descriptors(cv::Mat descriptors1, cv::Mat descriptors2, std::vector<cv::DMatch>* matches) {
     cv::BFMatcher bfMatcher(cv::NORM_HAMMING, true);  // NORM_HAMMING for binary descriptors like ORB and BRIEF
 
     // Match descriptors
     bfMatcher.match(descriptors1, descriptors2, *matches);
 
     // Filter matches by distance threshold
-    float distanceThreshold = 20;
+    float distanceThreshold = 10;
     std::vector<cv::DMatch> goodMatches;
 
     for (const auto& match : *matches) {
@@ -116,7 +117,7 @@ void match_descriptors(cv::Mat descriptors1, cv::Mat descriptors2, std::vector<c
     *matches = goodMatches;
 }
 
-void triangulate(cv::Mat P_left, cv::Mat P_right, std::vector<cv::Point2f> pointsLeft, std::vector<cv::Point2f> pointsRight, std::vector<cv::Point3d>* points3D) {
+static void triangulate(cv::Mat P_left, cv::Mat P_right, std::vector<cv::Point2f> pointsLeft, std::vector<cv::Point2f> pointsRight, std::vector<cv::Point3d>* points3D) {    
     cv::Mat points4D;
     cv::triangulatePoints(P_left, P_right, pointsLeft, pointsRight, points4D);
 
@@ -131,6 +132,266 @@ void triangulate(cv::Mat P_left, cv::Mat P_right, std::vector<cv::Point2f> point
     }
 }
 
+static void filter_correspondences(std::vector<cv::Point2f>& pointsLeft, std::vector<cv::Point2f>& pointsRight, std::vector<cv::Point3d>& points3D, std::vector<cv::Point2f>* transformedPoints) {
+    cv::Mat H = cv::findHomography(pointsLeft, pointsRight, cv::RANSAC);
+
+    // Transform points from left image to right image
+    cv::perspectiveTransform(pointsLeft, *transformedPoints, H);
+}
+
+static void compute_disparity_map(cv::Mat rectifiedLeft, cv::Mat rectifiedRight, cv::Mat* disparityMap) {    
+    cv::Mat disparityMapNotNormalized;
+    cv::Ptr<cv::StereoBM> stereo = cv::StereoBM::create(16, 9);
+    cv::Mat grayLeft, grayRight;
+    if (rectifiedLeft.channels() == 1) {
+        grayLeft = rectifiedLeft;
+        grayRight = rectifiedRight;
+    } else {
+        cv::cvtColor(rectifiedLeft, grayLeft, cv::COLOR_BGR2GRAY);
+        cv::cvtColor(rectifiedRight, grayRight, cv::COLOR_BGR2GRAY);
+    }
+    stereo->compute(grayLeft, grayRight, disparityMapNotNormalized);
+
+    cv::normalize(disparityMapNotNormalized, *disparityMap, 0, 255, cv::NORM_MINMAX, CV_8U);
+}
+
+static std::vector<cv::Point3d> dense_reconstruction(cv::Mat& disparityMap, cv::Mat rectifiedLeft, cv::Mat rectifiedRight, cv::Mat Q) {
+    cv::Mat points3D;
+
+    cv::reprojectImageTo3D(disparityMap, points3D, Q);
+
+    std::vector<cv::Point3d> points3DVector;
+    for (int i = 0; i < points3D.rows; i++) {
+        for (int j = 0; j < points3D.cols; j++) {
+            cv::Vec3f point = points3D.at<cv::Vec3f>(i, j);
+            if (cv::norm(point) < 1000) {
+                points3DVector.push_back(cv::Point3d(point[0], point[1], point[2]));
+            }
+        }
+    }
+
+    return points3DVector;
+}
+
+static void estimate_pose(
+    const std::vector<cv::Point2f>& pointsLeft,
+    const std::vector<cv::Point2f>& pointsRight,
+    const cv::Mat& K_left, const cv::Mat& K_right,
+    const cv::Mat& D_left, const cv::Mat& D_right,
+    cv::Mat* R, cv::Mat* T
+) {
+    std::vector<cv::Point2f> pointsLeftUndistorted, pointsRightUndistorted;
+
+    cv::undistortPoints(pointsLeft, pointsLeftUndistorted, K_left, D_left);
+    cv::undistortPoints(pointsRight, pointsRightUndistorted, K_right, D_right);
+
+    cv::Mat E = cv::findEssentialMat(pointsLeftUndistorted, pointsRightUndistorted, cv::Mat::eye(3, 3, CV_64F), cv::RANSAC);
+
+    cv::recoverPose(E, pointsLeftUndistorted, pointsRightUndistorted, cv::Mat::eye(3, 3, CV_64F), *R, *T);
+}
+
+void rectifiyng_process(cv::Mat imgLeft, cv::Mat imgRight) {
+    cv::Mat rectifiedLeft, rectifiedRight, Q;
+    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight, &Q);
+    cv::imshow("Rectified image left", rectifiedLeft);
+    cv::imshow("Rectified image right", rectifiedRight);
+    cv::waitKey(0);
+}
+
+void keypoints_process(cv::Mat imgLeft, cv::Mat imgRight) {
+    cv::Mat rectifiedLeft, rectifiedRight;
+    cv::Mat D_left, K_left, R_left, P_left;
+    cv::Mat D_right, K_right, R_right, P_right;
+    cv::Mat T, R;
+    std::vector<cv::KeyPoint> keypoints1, keypoints2;
+
+    setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T, R);
+
+    cv::Mat Q;
+    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight, &Q);
+
+    detect_keypoints(rectifiedLeft, rectifiedRight, &keypoints1, &keypoints2);
+
+    cv::Mat keypointImageLeft;
+    cv::drawKeypoints(rectifiedLeft, keypoints1, keypointImageLeft, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    cv::Mat keypointImageRight;
+    cv::drawKeypoints(rectifiedRight, keypoints2, keypointImageRight, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    cv::imshow("Keypoints left", keypointImageLeft);
+    cv::imshow("Keypoints right", keypointImageRight);
+    cv::waitKey(0);
+}
+
+void matching_process(cv::Mat imgLeft, cv::Mat imgRight) {
+    cv::Mat rectifiedLeft, rectifiedRight;
+
+    cv::Mat D_left, K_left, R_left, P_left;
+    cv::Mat D_right, K_right, R_right, P_right;
+    cv::Mat T, R;
+
+    setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T, R);
+
+    cv::Mat Q;
+    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight, &Q);
+
+    std::vector<cv::KeyPoint> keypoints1;
+    std::vector<cv::KeyPoint> keypoints2;
+    detect_keypoints(rectifiedLeft, rectifiedRight, &keypoints1, &keypoints2);
+
+    cv::Mat descriptors1;
+    cv::Mat descriptors2;
+    compute_descriptors(rectifiedLeft, rectifiedRight, keypoints1, keypoints2, &descriptors1, &descriptors2);
+
+    std::vector<cv::DMatch> matches;
+    match_descriptors(descriptors1, descriptors2, &matches);
+
+    cv::Mat imgMatches;
+    cv::drawMatches(rectifiedLeft, keypoints1, rectifiedRight, keypoints2, matches, imgMatches, cv::Scalar::all(-1),
+                    cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+    cv::imshow("Matches", imgMatches);
+    cv::waitKey(0);
+}
+
+
+void homography_process(cv::Mat imgLeft, cv::Mat imgRight) {
+    cv::Mat rectifiedLeft, rectifiedRight;
+
+    cv::Mat D_left, K_left, R_left, P_left;
+    cv::Mat D_right, K_right, R_right, P_right;
+    cv::Mat T, R;
+
+    setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T, R);
+
+    cv::Mat Q;
+    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight, &Q);
+
+    std::vector<cv::KeyPoint> keypoints1;
+    std::vector<cv::KeyPoint> keypoints2;
+    detect_keypoints(rectifiedLeft, rectifiedRight, &keypoints1, &keypoints2);
+
+    cv::Mat descriptors1;
+    cv::Mat descriptors2;
+    compute_descriptors(rectifiedLeft, rectifiedRight, keypoints1, keypoints2, &descriptors1, &descriptors2);
+
+    std::vector<cv::DMatch> matches;
+    match_descriptors(descriptors1, descriptors2, &matches);
+
+    // Filter corresponding keypoints from good matches
+    std::vector<cv::Point2f> pointsLeft, pointsRight;
+
+    for (const auto& match : matches) {
+        // Use the queryIdx for the left image and trainIdx for the right image
+        pointsLeft.push_back(keypoints1[match.queryIdx].pt);
+        pointsRight.push_back(keypoints2[match.trainIdx].pt);
+    }
+
+    std::vector<cv::Point3d> points3D;
+    triangulate(P_left, P_right, pointsLeft, pointsRight, &points3D);
+
+    std::vector<cv::Point2f> transformedPoints;
+    filter_correspondences(pointsLeft, pointsRight, points3D, &transformedPoints);
+
+    for (const auto& point : transformedPoints) {
+        cv::circle(rectifiedRight, point, 3, cv::Scalar(0, 0, 255), cv::FILLED);
+    }
+
+    cv::imshow("Transformed points", rectifiedRight);
+    cv::waitKey(0);
+}
+
+void disparity_map_process(cv::Mat imgLeft, cv::Mat imgRight) {
+    cv::Mat rectifiedLeft, rectifiedRight;
+
+    cv::Mat Q;
+    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight, &Q);
+
+    cv::Mat disparityMap;
+    compute_disparity_map(rectifiedLeft, rectifiedRight, &disparityMap);
+
+    cv::imshow("Disparity Map", disparityMap);
+    cv::waitKey(0);
+}
+
+
+
+void pose_estimation_process(cv::Mat imgLeft, cv::Mat imgRight) {
+    cv::Mat rectifiedLeft, rectifiedRight;
+
+    cv::Mat D_left, K_left, R_left, P_left;
+    cv::Mat D_right, K_right, R_right, P_right;
+    cv::Mat T, R;
+
+    setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T, R);
+
+    cv::Mat Q;
+    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight, &Q);
+
+    std::vector<cv::KeyPoint> keypoints1;
+    std::vector<cv::KeyPoint> keypoints2;
+    detect_keypoints(rectifiedLeft, rectifiedRight, &keypoints1, &keypoints2);
+
+    cv::Mat descriptors1;
+    cv::Mat descriptors2;
+    compute_descriptors(rectifiedLeft, rectifiedRight, keypoints1, keypoints2, &descriptors1, &descriptors2);
+
+    std::vector<cv::DMatch> matches;
+    match_descriptors(descriptors1, descriptors2, &matches);
+
+    // Filter corresponding keypoints from good matches
+    std::vector<cv::Point2f> pointsLeft, pointsRight;
+
+    for (const auto& match : matches) {
+        // Use the queryIdx for the left image and trainIdx for the right image
+        pointsLeft.push_back(keypoints1[match.queryIdx].pt);
+        pointsRight.push_back(keypoints2[match.trainIdx].pt);
+    }
+
+    cv::Mat R_estimated, T_estimated;
+    estimate_pose(pointsLeft, pointsRight, K_left, K_right, D_left, D_right, &R_estimated, &T_estimated);
+
+    std::cout << "Rotation matrix: " << R_estimated << std::endl;
+    std::cout << "Translation vector: " << T_estimated << std::endl;
+}
+
+std::vector<cv::Point3d> dense_point_cloud(cv::Mat imgLeft, cv::Mat imgRight) {
+    cv::Mat rectifiedLeft, rectifiedRight;
+
+    cv::Mat D_left, K_left, R_left, P_left;
+    cv::Mat D_right, K_right, R_right, P_right;
+    cv::Mat T, R;
+
+    setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T, R);
+
+    cv::Mat Q;
+    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight, &Q);
+
+    std::vector<cv::KeyPoint> keypoints1;
+    std::vector<cv::KeyPoint> keypoints2;
+    detect_keypoints(rectifiedLeft, rectifiedRight, &keypoints1, &keypoints2);
+
+    cv::Mat descriptors1;
+    cv::Mat descriptors2;
+    compute_descriptors(rectifiedLeft, rectifiedRight, keypoints1, keypoints2, &descriptors1, &descriptors2);
+
+    std::vector<cv::DMatch> matches;
+    match_descriptors(descriptors1, descriptors2, &matches);
+
+    // Filter corresponding keypoints from good matches
+    std::vector<cv::Point2f> pointsLeft, pointsRight;
+
+    for (const auto& match : matches) {
+        // Use the queryIdx for the left image and trainIdx for the right image
+        pointsLeft.push_back(keypoints1[match.queryIdx].pt);
+        pointsRight.push_back(keypoints2[match.trainIdx].pt);
+    }
+
+    cv::Mat disparityMap;
+    compute_disparity_map(rectifiedLeft, rectifiedRight, &disparityMap);
+
+    std::vector<cv::Point3d> densePoints3D = dense_reconstruction(disparityMap, rectifiedLeft, rectifiedRight, Q);
+
+    return densePoints3D;
+}
+
 std::vector<cv::Point3d> triangulateKeyPoints(cv::Mat imgLeft, cv::Mat imgRight) {
     cv::Mat rectifiedLeft, rectifiedRight;
 
@@ -140,7 +401,8 @@ std::vector<cv::Point3d> triangulateKeyPoints(cv::Mat imgLeft, cv::Mat imgRight)
 
     setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T, R);
 
-    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight);
+    cv::Mat Q;
+    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight, &Q);
 
     std::vector<cv::KeyPoint> keypoints1;
     std::vector<cv::KeyPoint> keypoints2;
@@ -167,49 +429,3 @@ std::vector<cv::Point3d> triangulateKeyPoints(cv::Mat imgLeft, cv::Mat imgRight)
 
     return points3D;
 }
-
-/*
-int main(int argc, char **argv) {
-    // Initialize the ROS2 system
-    rclcpp::init(argc, argv);
-    cv::Mat imgLeft = cv::imread("../../calibrationdata/left-0000.png", cv::COLOR_BGR2GRAY);
-    cv::Mat imgRight = cv::imread("../../calibrationdata/right-0000.png", cv::COLOR_BGR2GRAY);
-    cv::Mat rectifiedLeft, rectifiedRight;
-
-    cv::Mat D_left, K_left, R_left, P_left;
-    cv::Mat D_right, K_right, R_right, P_right;
-    cv::Mat T, R;
-
-    setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T, R);
-
-    rectify_images(imgLeft, imgRight, &rectifiedLeft, &rectifiedRight);
-
-    std::vector<cv::KeyPoint> keypoints1;
-    std::vector<cv::KeyPoint> keypoints2;
-    detect_keypoints(rectifiedLeft, rectifiedRight, &keypoints1, &keypoints2);
-
-    cv::Mat descriptors1;
-    cv::Mat descriptors2;
-    compute_descriptors(rectifiedLeft, rectifiedRight, keypoints1, keypoints2, &descriptors1, &descriptors2);
-
-    std::vector<cv::DMatch> matches;
-    match_descriptors(descriptors1, descriptors2, &matches);
-
-    // Filter corresponding keypoints from good matches
-    std::vector<cv::Point2f> pointsLeft, pointsRight;
-
-    for (const auto& match : matches) {
-        // Use the queryIdx for the left image and trainIdx for the right image
-        pointsLeft.push_back(keypoints1[match.queryIdx].pt);
-        pointsRight.push_back(keypoints2[match.trainIdx].pt);
-    }
-
-    std::vector<cv::Point3d> points3D;
-    triangulate(P_left, P_right, pointsLeft, pointsRight, &points3D);
-
-    // To publish the points in the topic /point_cloud uncomment this line
-    //publishContinuously(points3D);
-
-    return 1;
-}
-*/

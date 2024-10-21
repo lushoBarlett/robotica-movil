@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(bagreader)
+project(compvision)
 
 # Find required packages
 find_package(rclcpp REQUIRED)
@@ -16,10 +16,10 @@ find_package(PCL REQUIRED)
 include_directories(include)
 
 # Add executable
-add_executable(bagreader src/bagreader.cpp src/stereoproc.cpp)
+add_executable(compvision src/main.cpp src/bagreader.cpp src/stereoproc.cpp)
 
 # Link dependencies
-ament_target_dependencies(bagreader
+ament_target_dependencies(compvision
     rclcpp
     sensor_msgs
     cv_bridge  # For cv_bridge functionalities
@@ -30,9 +30,9 @@ ament_target_dependencies(bagreader
 )
 
 # Link OpenCV libraries
-target_link_libraries(bagreader ${OpenCV_LIBS})
+target_link_libraries(compvision ${OpenCV_LIBS})
 
 # Install targets
 install(TARGETS
-    bagreader
+    compvision
     DESTINATION lib/${PROJECT_NAME})
