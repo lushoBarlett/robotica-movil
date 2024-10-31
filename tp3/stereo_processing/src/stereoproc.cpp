@@ -106,7 +106,7 @@ static void match_descriptors(cv::Mat descriptors1, cv::Mat descriptors2, std::v
     bfMatcher.match(descriptors1, descriptors2, *matches);
 
     // Filter matches by distance threshold
-    float distanceThreshold = 10;
+    float distanceThreshold = 30;
     std::vector<cv::DMatch> goodMatches;
 
     for (const auto& match : *matches) {
@@ -132,11 +132,35 @@ static void triangulate(cv::Mat P_left, cv::Mat P_right, std::vector<cv::Point2f
     }
 }
 
-static void filter_correspondences(std::vector<cv::Point2f>& pointsLeft, std::vector<cv::Point2f>& pointsRight, std::vector<cv::Point3d>& points3D, std::vector<cv::Point2f>* transformedPoints) {
-    cv::Mat H = cv::findHomography(pointsLeft, pointsRight, cv::RANSAC);
+static void filter_correspondences(std::vector<cv::Point2f>& pointsLeft,
+                                   std::vector<cv::Point2f>& pointsRight,
+                                   std::vector<cv::DMatch>* matches,
+                                   std::vector<cv::Point2f>* transformedPoints,
+                                   std::vector<cv::DMatch>* inlierMatches) {
+    // Compute homography using RANSAC
+    std::vector<uchar> inliersMask(pointsLeft.size());
+    cv::Mat H = cv::findHomography(pointsLeft, pointsRight, cv::RANSAC, 3.0, inliersMask);
 
-    // Transform points from left image to right image
-    cv::perspectiveTransform(pointsLeft, *transformedPoints, H);
+    // Filter points based on RANSAC inliers
+    std::vector<cv::Point2f> filteredPointsLeft, filteredPointsRight;
+    
+    // Store filtered points and their corresponding matches
+    for (size_t i = 0; i < inliersMask.size(); ++i) {
+        if (inliersMask[i]) {
+            filteredPointsLeft.push_back(pointsLeft[i]);
+            filteredPointsRight.push_back(pointsRight[i]);
+            if (inlierMatches)
+                inlierMatches->push_back((*matches)[i]);
+        }
+    }
+
+    // Update the input vectors with inliers
+    pointsLeft = std::move(filteredPointsLeft);
+    pointsRight = std::move(filteredPointsRight);
+
+    // Transform points from left image to right image using the homography
+    if (transformedPoints)
+        cv::perspectiveTransform(pointsLeft, *transformedPoints, H);
 }
 
 static void compute_disparity_map(cv::Mat rectifiedLeft, cv::Mat rectifiedRight, cv::Mat* disparityMap) {    
@@ -284,11 +308,18 @@ void homography_process(cv::Mat imgLeft, cv::Mat imgRight) {
         pointsRight.push_back(keypoints2[match.trainIdx].pt);
     }
 
-    std::vector<cv::Point3d> points3D;
-    triangulate(P_left, P_right, pointsLeft, pointsRight, &points3D);
-
     std::vector<cv::Point2f> transformedPoints;
-    filter_correspondences(pointsLeft, pointsRight, points3D, &transformedPoints);
+    std::vector<cv::DMatch> inlierMatches;
+    filter_correspondences(pointsLeft, pointsRight, &matches, &transformedPoints, &inlierMatches);
+
+    cv::Mat imgMatches;
+    cv::drawMatches(rectifiedLeft, keypoints1, rectifiedRight, keypoints2, inlierMatches, imgMatches, cv::Scalar::all(-1),
+                    cv::Scalar::all(-1), std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+    cv::imshow("Matches", imgMatches);
+    cv::waitKey(0);
+
+    if (rectifiedRight.channels() == 1)
+        cv::cvtColor(rectifiedRight, rectifiedRight, cv::COLOR_GRAY2BGR);
 
     for (const auto& point : transformedPoints) {
         cv::circle(rectifiedRight, point, 3, cv::Scalar(0, 0, 255), cv::FILLED);
@@ -423,6 +454,8 @@ std::vector<cv::Point3d> triangulateKeyPoints(cv::Mat imgLeft, cv::Mat imgRight)
         pointsLeft.push_back(keypoints1[match.queryIdx].pt);
         pointsRight.push_back(keypoints2[match.trainIdx].pt);
     }
+
+    filter_correspondences(pointsLeft, pointsRight, nullptr, nullptr, nullptr);
 
     std::vector<cv::Point3d> points3D;
     triangulate(P_left, P_right, pointsLeft, pointsRight, &points3D);
