@@ -6,118 +6,34 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
 #include <rclcpp/serialized_message.hpp>
-#include <sensor_msgs/msg/compressed_image.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <tf2_ros/static_transform_broadcaster.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <cv_bridge/cv_bridge.h>
-#include <opencv2/opencv.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/features2d.hpp>
-#include <opencv2/viz.hpp>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
+#include <opencv2/core.hpp>
+#include <signal.h>
 #include <vector>
-#include <functional>
+#include <iostream>
+#include <string>
+#include <memory>
 #include "stereoproc.hpp"
 #include "bagreader.hpp"
+#include "poses.hpp"
+#include "cam_params.hpp"
 
-static void to_homogenous_coords(const std::vector<cv::Point3d>& points3D, std::vector<cv::Mat>& points3DHomogenous) {
-    for (const auto& point : points3D) {
-        cv::Mat pointHomogenous = (cv::Mat_<double>(4, 1) << point.x, point.y, point.z, 1);
-        points3DHomogenous.push_back(pointHomogenous);
+
+std::atomic<bool> block(false); // Flag to control pause state
+
+void handleSignal(int signal) {
+    if (signal == SIGTSTP) {
+        block = !block;
     }
 }
 
-static void from_homogenous_coords(const std::vector<cv::Mat>& points3DHomogenous, std::vector<cv::Point3d>& points3D) {
-    for (const auto& point : points3DHomogenous) {
-        cv::Point3d point3D;
-        float w = point.at<float>(3, 0);
-        point3D.x = point.at<float>(0, 0) / w;
-        point3D.y = point.at<float>(1, 0) / w;
-        point3D.z = point.at<float>(2, 0) / w;
-        points3D.push_back(point3D);
-    }
-}
-
-static cv::Mat pose2rot(Pose pose) {
-    double w = pose.qw;
-    double x = pose.qx;
-    double y = pose.qy;
-    double z = pose.qz;
-
-    cv::Mat R = (cv::Mat_<double>(3, 3) << 1 - 2 * y * y - 2 * z * z, 2 * x * y - 2 * z * w, 2 * x * z + 2 * y * w,
-                                           2 * x * y + 2 * z * w, 1 - 2 * x * x - 2 * z * z, 2 * y * z - 2 * x * w,
-                                           2 * x * z - 2 * y * w, 2 * y * z + 2 * x * w, 1 - 2 * x * x - 2 * y * y);
-
-    return R;
-}
-
-static cv::Mat poseToTransformationMatrix(const Pose pose) {
-    // Create a 4x4 identity matrix
-    cv::Mat transformation_matrix = cv::Mat::eye(4, 4, CV_32F);
-
-    // Convert the quaternion to a rotation matrix
-    // OpenCV represents quaternions as (qw, qx, qy, qz)
-    cv::Mat rotation_matrix = pose2rot(pose);
-
-    // Fill the top-left 3x3 block with the rotation matrix
-    rotation_matrix.copyTo(transformation_matrix(cv::Rect(0, 0, 3, 3)));
-
-    // Set the translation vector in the last column
-    transformation_matrix.at<float>(0, 3) = pose.x;
-    transformation_matrix.at<float>(1, 3) = pose.y;
-    transformation_matrix.at<float>(2, 3) = pose.z;
-
-    return transformation_matrix;
-}
-
-// Function to read the CSV file and store the poses
-static std::vector<Pose> readGroundTruthCSV(const std::string& csv_file) {
-    std::ifstream file(csv_file);
-    std::string line;
-    std::vector<Pose> poses;
-
-    while (std::getline(file, line)) {
-        std::stringstream ss(line);
-        Pose pose;
-        char separator;
-
-        // Assuming CSV format: timestamp, x, y, z, qw, qx, qy, qz
-        ss >> pose.timestamp >> separator >> pose.x >> separator >> pose.y >> separator
-           >> pose.z >> separator >> pose.qw >> separator >> pose.qx >> separator >> pose.qy >> separator
-           >> pose.qz;
-        
-        pose.timestamp = static_cast<double>(pose.timestamp) / 1e9;
-
-        poses.push_back(pose);
-    }
-
-    return poses;
-}
-
-// Function to find the closest pose for a given ROS timestamp in seconds
-static bool findClosestPose(const std::vector<Pose> poses, double ros_time_seconds, double tolerance, Pose* closest_pose) {
-    double min_diff = std::numeric_limits<double>::max();
-
-    for (const auto& pose : poses) {
-        double time_diff = std::fabs(pose.timestamp - ros_time_seconds);
-        if (time_diff < min_diff && time_diff <= tolerance) {
-            min_diff = time_diff;
-            *closest_pose = pose;
-        } else if (ros_time_seconds < pose.timestamp) {
-            break;
-        }
-    }
-
-    return (min_diff <= tolerance);
-}
-
-static sensor_msgs::msg::PointCloud2 points3DtoCloudMsg(const std::vector<cv::Point3d>& points3D) {
+static sensor_msgs::msg::PointCloud2 points3DtoCloudMsg(const std::vector<cv::Point3d>& points3D, const std::string &frame_id) {
     pcl::PointCloud<pcl::PointXYZ> cloud;
     cloud.width = points3D.size();
     cloud.height = 1;
@@ -132,18 +48,47 @@ static sensor_msgs::msg::PointCloud2 points3DtoCloudMsg(const std::vector<cv::Po
 
     sensor_msgs::msg::PointCloud2 cloud_msg;
     pcl::toROSMsg(cloud, cloud_msg);
-    cloud_msg.header.frame_id = "base_link";
+    cloud_msg.header.frame_id = frame_id;
 
     return cloud_msg;
 }
 
-void map_rosbag(int argc, char **argv, Point3DFunction func)
+void publish_camera_pose(std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster, const std::shared_ptr<tf2_ros::StaticTransformBroadcaster>& static_broadcaster, const std::string &child_frame_id, const std::string &frame_id, Pose pose) {
+    geometry_msgs::msg::TransformStamped transform_stamped;
+
+    // Set header and frame information
+    //transform_stamped.header.stamp = pose.timestamp;
+    transform_stamped.header.frame_id = frame_id;
+    transform_stamped.child_frame_id = child_frame_id;
+
+    // Set translation
+    transform_stamped.transform.translation.x = pose.x;
+    transform_stamped.transform.translation.y = pose.y;
+    transform_stamped.transform.translation.z = pose.z;
+
+    transform_stamped.transform.rotation.x = pose.qx;
+    transform_stamped.transform.rotation.y = pose.qy;
+    transform_stamped.transform.rotation.z = pose.qz;
+    transform_stamped.transform.rotation.w = pose.qw;
+
+    // Publish the transform
+    if (tf_broadcaster)
+        tf_broadcaster->sendTransform(transform_stamped);
+    else if (static_broadcaster)
+        static_broadcaster->sendTransform(transform_stamped);
+}
+
+void map_rosbag_cam_poses(int argc, char **argv, bool dense)
 {
+    std::signal(SIGTSTP, handleSignal);
+
     // Initialize ROS 2
     rclcpp::init(argc, argv);
 
     // Create the ROS 2 node
     auto node = std::make_shared<rclcpp::Node>("rosbag_reader");
+    auto tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
+    auto static_broadcaster = std::make_shared<tf2_ros::StaticTransformBroadcaster>(node);
     auto publisher = node->create_publisher<sensor_msgs::msg::PointCloud2>("point_cloud", 10);
 
     // Create a reader object for the ROS bag
@@ -157,18 +102,27 @@ void map_rosbag(int argc, char **argv, Point3DFunction func)
     // Open the ROS bag file
     reader.open(storage_options);
 
+    // Read ground truth poses of the camera's body
     std::string csv_file = "../data/ground_truth.csv";
     std::vector<Pose> poses = readGroundTruthCSV(csv_file);
     double tolerance = 0.1;  // Set tolerance
 
+    // Initialize variables to store rosbag cameras images
     rclcpp::Serialization<sensor_msgs::msg::Image> image_serializer;
     std::shared_ptr<sensor_msgs::msg::Image> image_msg_cam0 = nullptr;
     std::shared_ptr<sensor_msgs::msg::Image> image_msg_cam1 = nullptr;
     rclcpp::Time timestamp_cam0;
     rclcpp::Time timestamp_cam1;
 
+    // Get poses of the cameras
+    Pose left_cam_pose_wrt_body = get_left_cam_transform_wrt_body();
+    Pose right_cam_pose_wrt_body = get_right_cam_transform_wrt_body();
+    float base_line_btw_cams = get_base_line_btw_cams();
+    publish_camera_pose(nullptr, static_broadcaster, "left_cam", "body", left_cam_pose_wrt_body);
+    publish_camera_pose(nullptr, static_broadcaster, "right_cam", "body", right_cam_pose_wrt_body);
+
     // Loop over the messages in the bag file
-    while (reader.has_next()) {
+    while (rclcpp::ok() && reader.has_next()) {
         // Read the next serialized message
         auto bag_message = reader.read_next();
 
@@ -181,12 +135,12 @@ void map_rosbag(int argc, char **argv, Point3DFunction func)
             timestamp_cam0 = rclcpp::Time(image_msg_cam0->header.stamp);
         }
         if (bag_message->topic_name == "/cam1/image_raw") {
-            // Deserialize the message to sensor_msgs::msg::Image
             image_msg_cam1 = std::make_shared<sensor_msgs::msg::Image>();
             image_serializer.deserialize_message(&serialized_msg, image_msg_cam1.get());
             timestamp_cam1 = rclcpp::Time(image_msg_cam1->header.stamp);
         }
 
+        // If an image from each camera has been read
         if (image_msg_cam0 && image_msg_cam1) {
             // Check if the timestamps match
             if (timestamp_cam0 == timestamp_cam1) {
@@ -207,24 +161,23 @@ void map_rosbag(int argc, char **argv, Point3DFunction func)
                     continue;
                 }
 
-                std::vector<cv::Point3d> fun(cv::Mat img1, cv::Mat img2);
-                cv::Mat transformation = poseToTransformationMatrix(closest_pose);
+                publish_camera_pose(tf_broadcaster_, nullptr, "body", "map", closest_pose);
 
-                std::vector<cv::Point3d> points3D = func(image_cam0, image_cam1);
+                cv::Mat R_estimated, T_estimated;
+                std::vector<cv::Point3d> points3D;
 
-                std::vector<cv::Mat> points3DHomogenous;
-                to_homogenous_coords(points3D, points3DHomogenous);
+                if (dense)
+                    process_images_dense(image_cam0, image_cam1, &points3D, block);
+                else
+                    process_images(image_cam0, image_cam1, &R_estimated, &T_estimated, &points3D, block);
 
-                for (auto& pointH : points3DHomogenous) {
-                    transformation.convertTo(transformation, CV_32F);
-                    pointH.convertTo(pointH, CV_32F);
-                    pointH = transformation * pointH;
+                if (!R_estimated.empty() && !T_estimated.empty()) {
+                    T_estimated *= base_line_btw_cams;
+                    Pose right_cam_pose_wrt_left_cam = createPose(R_estimated, T_estimated);
+                    publish_camera_pose(tf_broadcaster_, nullptr, "right_cam_est", "left_cam", right_cam_pose_wrt_left_cam);
                 }
 
-                std::vector<cv::Point3d> points3DMoved;
-                from_homogenous_coords(points3DHomogenous, points3DMoved);
-
-                sensor_msgs::msg::PointCloud2 cloud_msg = points3DtoCloudMsg(points3DMoved);
+                sensor_msgs::msg::PointCloud2 cloud_msg = points3DtoCloudMsg(points3D, "left_cam");
 
                 publisher->publish(cloud_msg);
             } else {

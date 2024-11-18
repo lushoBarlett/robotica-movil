@@ -4,19 +4,19 @@ project(compvision)
 # Find required packages
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(cv_bridge REQUIRED)  # For cv_bridge
+find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(rosbag2_cpp REQUIRED)  # For reading/writing ROS bags
-find_package(rosbag2_storage REQUIRED)  # For storage options in ROS bags
+find_package(rosbag2_cpp REQUIRED)
+find_package(rosbag2_storage REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(PCL REQUIRED)
-
+find_package(tf2_ros REQUIRED)
 
 # Include directories
 include_directories(include)
 
 # Add executable
-add_executable(compvision src/main.cpp src/bagreader.cpp src/stereoproc.cpp)
+add_executable(compvision src/main.cpp src/bagreader.cpp src/stereoproc.cpp src/cam_params.cpp src/poses.cpp)
 
 # Link dependencies
 ament_target_dependencies(compvision
@@ -27,6 +27,7 @@ ament_target_dependencies(compvision
     rosbag2_storage  # For rosbag2_storage functionalities
     pcl_conversions
     PCL
+    tf2_ros
 )
 
 # Link OpenCV libraries

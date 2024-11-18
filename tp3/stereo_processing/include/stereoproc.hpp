@@ -1,24 +1,10 @@
 #ifndef STEREOPROC_HPP
 #define STEREOPROC_HPP
 
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
 
-// The functions compute the whole process and show the results
-void rectifiyng_process(cv::Mat imgLeft, cv::Mat imgRight);
+void process_images(cv::Mat imgLeft, cv::Mat imgRight, cv::Mat* R_estimated, cv::Mat* T_estimated, std::vector<cv::Point3d>* points3D, bool block);
 
-void keypoints_process(cv::Mat imgLeft, cv::Mat imgRight);
-
-void matching_process(cv::Mat imgLeft, cv::Mat imgRight);
-
-void homography_process(cv::Mat imgLeft, cv::Mat imgRight);
-
-void disparity_map_process(cv::Mat imgLeft, cv::Mat imgRight);
-
-void pose_estimation_process(cv::Mat imgLeft, cv::Mat imgRight);
-
-// These functions calculate a vector of 3D points given 2 images with different methods
-std::vector<cv::Point3d> dense_point_cloud(cv::Mat imgLeft, cv::Mat imgRight);
-
-std::vector<cv::Point3d> triangulateKeyPoints(cv::Mat imgLeft, cv::Mat imgRight);
+void process_images_dense(cv::Mat imgLeft, cv::Mat imgRight, std::vector<cv::Point3d>* densePoints3D, bool block);
 
 #endif // STEREOPROC_HPP
