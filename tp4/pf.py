@@ -33,11 +33,16 @@ class ParticleFilter:
         """
         particles = np.zeros((self.num_particles, 3))
         for i in range(self.num_particles):
-            particles[i, :] = env.forward(self.particles[i, :], u).ravel()
+            # move the particle forward with noise
+            covmotion = env.noise_from_motion(u, self.alphas)
+            particles[i, :] = np.random.multivariate_normal(env.forward(self.particles[i, :], u).ravel(), covmotion)
         self.particles = particles
 
         for i in range(self.num_particles):
-            self.weights[i] = None
+            self.weights[i] = env.likelihood(minimized_angle(env.observe(self.particles[i, :], marker_id) - z), self.beta)
+
+        # normalize
+        self.weights /= np.sum(self.weights)
 
         self.particles, self.weights = self.resample(self.particles, self.weights)
 
@@ -57,7 +62,7 @@ class ParticleFilter:
         i = 0
         for m in range(J):
             U = r + m / J
-            while U > c and i < J - 1:
+            while U > c:
                 i += 1
                 c += weights[i]
             new_particles[m, :] = particles[i, :]

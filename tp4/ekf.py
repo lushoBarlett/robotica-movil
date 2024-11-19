@@ -27,9 +27,7 @@ class ExtendedKalmanFilter:
         z: landmark observation
         marker_id: landmark ID
         """
-        # Models
         g = lambda: env.forward(self.mu, u)
-        h = lambda: env.observe(self.mu, marker_id)
 
         G = env.G(self.mu, u)
         H = env.H(self.mu, marker_id)
@@ -58,15 +56,11 @@ class ExtendedKalmanFilter:
             np.linalg.inv(H @ psigma @ H.T + Q)
         )
 
+        # For correction, we use the predicted state
+        h = lambda: env.observe(pmu, marker_id)
+
         # Correction step
         anglediff = minimized_angle(z[0][0] - h()[0][0])
-        print("Rrl:",
-              round(z[0][0] / np.pi * 180, 0),
-              "\tPd:",
-              round(h()[0][0] / np.pi * 180, 0),
-              "\tE:",
-              round(anglediff / np.pi * 180, 0))
-        print("Correction", K * anglediff)
         self.mu = pmu + K * anglediff
         self.sigma = (np.eye(3) - K @ H) @ psigma
 
