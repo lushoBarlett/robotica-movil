@@ -33,9 +33,14 @@ class ParticleFilter:
         """
         particles = np.zeros((self.num_particles, 3))
         for i in range(self.num_particles):
-            # move the particle forward with noise
-            covmotion = env.noise_from_motion(u, self.alphas)
-            particles[i, :] = np.random.multivariate_normal(env.forward(self.particles[i, :], u).ravel(), covmotion)
+            # move the particles a bit
+            particles[i, 0] = self.particles[i, 0] + np.random.normal(0, 2)
+            particles[i, 1] = self.particles[i, 1] + np.random.normal(0, 2)
+            particles[i, 2] = self.particles[i, 2] + np.random.normal(0, 0.1)
+            particles[i, :] = np.random.multivariate_normal( # add noise to the motion model
+                env.forward(particles[i, :], u).ravel(), # motion model
+                env.noise_from_motion(u, self.alphas) # motion covariance
+            )
         self.particles = particles
 
         for i in range(self.num_particles):

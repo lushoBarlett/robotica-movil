@@ -28,9 +28,10 @@ class ExtendedKalmanFilter:
         marker_id: landmark ID
         """
         g = lambda: env.forward(self.mu, u)
+        pmu = g()
 
-        G = env.G(self.mu, u)
-        H = env.H(self.mu, marker_id)
+        G = env.G(pmu, u)
+        H = env.H(pmu, marker_id)
 
         rot1, trans, rot2 = u.ravel()
 
@@ -42,12 +43,11 @@ class ExtendedKalmanFilter:
             0, 0, a1 * rot2**2 + a2 * trans**2,
         ]).reshape(3, 3)
 
-        V = env.V(self.mu, u)
+        V = env.V(pmu, u)
         R = V @ M @ V.T
         Q = self.beta
 
         # Prediction step
-        pmu = g()
         psigma = G @ self.sigma @ G.T + R
 
         K = (
@@ -60,7 +60,7 @@ class ExtendedKalmanFilter:
         h = lambda: env.observe(pmu, marker_id)
 
         # Correction step
-        anglediff = minimized_angle(z[0][0] - h()[0][0])
+        anglediff = minimized_angle(z - h())
         self.mu = pmu + K * anglediff
         self.sigma = (np.eye(3) - K @ H) @ psigma
 
