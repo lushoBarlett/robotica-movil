@@ -28,6 +28,21 @@ def test_pf():
             print("$", command)
             os.system(f"python localization.py pf --data-factor {i} --filter-factor {i} >> pf.txt")
 
+def test_pf_extensive():
+    print("Running PF extensive tests")
+
+    with open("pfext.txt", "w") as f:
+        f.write("")
+
+    particles = [20, 50, 500]
+    for i in r:
+        for n in particles:
+            print(f"Running 10 runs for r = {i} and n = {n}")
+            for _ in range(10):
+                command = f"python localization.py pf --data-factor {i} --filter-factor {i} --num-particles {n} >> pfext.txt"
+                print("$", command)
+                os.system(f"python localization.py pf --data-factor {i} --filter-factor {i} --num-particles {n} >> pfext.txt")
+
 """
 Example output of one run:
 Data factor: {r}
@@ -67,7 +82,7 @@ resultados.
 Graficar el error de posición medio y ANEES a medida que los factores α, β del filtro varían sobre
 r mientras los datos son generados con los valores por defecto.
 """
-def plot(runs: list[Run], prefix: str = ""):
+def plot(runs: list[Run], prefix: str = "", log=False):
     import matplotlib.pyplot as plt
 
     x = sorted(set(run.data_factor for run in runs))
@@ -85,11 +100,21 @@ def plot(runs: list[Run], prefix: str = ""):
 
         y2.append(avg_anees)
 
+    if log:
+        plt.xscale("log")
+    else:
+        plt.xscale("linear")
+
     plt.plot(x, y)
     plt.xlabel("r")
     plt.ylabel("Mean position error")
     plt.show()
     plt.savefig(prefix + "mean_position_error.png")
+
+    if log:
+        plt.xscale("log")
+    else:
+        plt.xscale("linear")
 
     plt.plot(x, y, label="Mean position error")
     plt.plot(x, y2, label="ANEES")
@@ -98,7 +123,7 @@ def plot(runs: list[Run], prefix: str = ""):
     plt.show()
     plt.savefig(prefix + "mean_position_error_and_anees.png")
 
-def plot_runs_from_file(filename: str):
+def plot_runs_from_file(filename: str, log=False):
     with open(filename, "r") as f:
         lines = f.readlines()
 
@@ -108,11 +133,13 @@ def plot_runs_from_file(filename: str):
             if run:
                 runs.append(run)
 
-        plot(runs, filename.split(".")[0] + "_")
+        plot(runs, filename.split(".")[0] + "_", log)
 
 if __name__ == "__main__":
     # used initially
     # test_ekf()
     # test_pf()
-    plot_runs_from_file("ekf.txt")
-    plot_runs_from_file("pf.txt")
+    # test_pf_extensive()
+    # plot_runs_from_file("ekf.txt")
+    # plot_runs_from_file("pf.txt")
+    plot_runs_from_file("pfext.txt", log=True)
