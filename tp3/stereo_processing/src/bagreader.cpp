@@ -53,7 +53,7 @@ static sensor_msgs::msg::PointCloud2 points3DtoCloudMsg(const std::vector<cv::Po
     return cloud_msg;
 }
 
-void publish_camera_pose(std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster, const std::shared_ptr<tf2_ros::StaticTransformBroadcaster>& static_broadcaster, const std::string &child_frame_id, const std::string &frame_id, Pose pose) {
+void publish_camera_pose(std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster, const std::shared_ptr<tf2_ros::StaticTransformBroadcaster>& static_broadcaster, const std::string &child_frame_id, const std::string &frame_id, Pose& pose) {
     geometry_msgs::msg::TransformStamped transform_stamped;
 
     // Set header and frame information
@@ -167,9 +167,9 @@ void map_rosbag_cam_poses(int argc, char **argv, bool dense)
                 std::vector<cv::Point3d> points3D;
 
                 if (dense)
-                    process_images_dense(image_cam0, image_cam1, &points3D, block);
+                    process_images_dense(image_cam0, image_cam1, points3D, block);
                 else
-                    process_images(image_cam0, image_cam1, &R_estimated, &T_estimated, &points3D, block);
+                    process_images(image_cam0, image_cam1, R_estimated, T_estimated, points3D, block);
 
                 if (!R_estimated.empty() && !T_estimated.empty()) {
                     T_estimated *= base_line_btw_cams;
