@@ -16,7 +16,7 @@ static inline float NORM(float a, float b, float c, float d) {
 	return sqrt(a * a + b * b + c * c + d * d); 
 }
 
-// quaternion = [w, x, y, z]'
+// quaternion = [x, y, z, w]'
 static cv::Mat mRot2Quat(const cv::Mat& m) {
 	float r11 = m.at<float>(0, 0);
 	float r12 = m.at<float>(0, 1);
@@ -80,7 +80,7 @@ static cv::Mat mRot2Quat(const cv::Mat& m) {
 	q2 /= r;
 	q3 /= r;
 
-	cv::Mat res = (cv::Mat_<float>(4, 1) << q0, q1, q2, q3);
+	cv::Mat res = (cv::Mat_<float>(4, 1) << q1, q2, q3, q0);
 	return res;
 }
 
