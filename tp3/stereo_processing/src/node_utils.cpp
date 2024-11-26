@@ -87,8 +87,8 @@ Pose change_ref_system(Pose &pose_in, Pose &pose_ref) {
     return pose_out;
 }
 
-void correct_way(cv::Mat &T_estimated, const Pose &body_pose_wrt_map,
-                 const Pose &new_body_pose_wrt_map) {
+void fix_way(cv::Mat &T_estimated, const Pose &body_pose_wrt_map,
+             const Pose &new_body_pose_wrt_map) {
     // Calculate the displacement vector
     float delta_x = new_body_pose_wrt_map.x - body_pose_wrt_map.x;
     float delta_y = new_body_pose_wrt_map.y - body_pose_wrt_map.y;
@@ -99,9 +99,6 @@ void correct_way(cv::Mat &T_estimated, const Pose &body_pose_wrt_map,
     float &T_y = T_estimated.at<float>(1, 0); // y-component
     float &T_z = T_estimated.at<float>(2, 0); // z-component
 
-    std::cout << "Before correcting T_estimated: [" << T_x << ", " << T_y << ", " << T_z << "]"
-              << std::endl;
-
     if ((delta_x > 0 && T_x < 0) || (delta_x < 0 && T_x > 0)) {
         T_x = -T_x;
     }
@@ -111,8 +108,4 @@ void correct_way(cv::Mat &T_estimated, const Pose &body_pose_wrt_map,
     if ((delta_z > 0 && T_z < 0) || (delta_z < 0 && T_z > 0)) {
         T_z = -T_z;
     }
-
-    // Debugging output
-    std::cout << "Corrected T_estimated: [" << T_x << ", " << T_y << ", " << T_z << "]"
-              << std::endl;
 }

@@ -20,12 +20,13 @@
 
 class MappingNode : public rclcpp::Node {
   public:
-    MappingNode(const std::string &bag_path, const std::string &poses_csv, bool dense);
+    MappingNode(const std::string &bag_path, const std::string &poses_csv, bool dense,
+                bool estimate_displacement);
     void process_bag();
 
   private:
     // Member variables
-    bool dense_;
+    bool dense_, estimate_displacement_;
     std::unique_ptr<rosbag2_cpp::Reader> reader_;
     std::vector<Pose> poses_;
     double base_line_btw_cams_;

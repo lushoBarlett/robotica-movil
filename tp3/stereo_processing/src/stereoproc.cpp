@@ -85,8 +85,10 @@ static void match_descriptors(cv::Mat &descriptors1, cv::Mat &descriptors2,
     matches = goodMatches;
 }
 
-static void triangulate(cv::Mat &P_left, cv::Mat &P_right, std::vector<cv::Point2f> &pointsLeft,
-                        std::vector<cv::Point2f> &pointsRight, std::vector<cv::Point3d> &points3D) {
+static void triangulate_points(cv::Mat &P_left, cv::Mat &P_right,
+                               std::vector<cv::Point2f> &pointsLeft,
+                               std::vector<cv::Point2f> &pointsRight,
+                               std::vector<cv::Point3d> &points3D) {
     cv::Mat points4D;
     cv::triangulatePoints(P_left, P_right, pointsLeft, pointsRight, points4D);
 
@@ -221,7 +223,8 @@ static void filter_matched_keypoints(std::vector<cv::KeyPoint> &keypoints_l,
 }
 
 void stereo_process_images(cv::Mat &imgLeft, cv::Mat &imgRight, cv::Mat &R_estimated,
-                           cv::Mat &T_estimated, std::vector<cv::Point3d> &points3D, bool block) {
+                           cv::Mat &T_estimated, std::vector<cv::Point3d> &points3D, bool block,
+                           bool triangulate, bool estimate_displacement) {
     cv::Mat rectifiedLeft, rectifiedRight;
 
     cv::Mat D_left, K_left, R_left, P_left;
@@ -258,9 +261,11 @@ void stereo_process_images(cv::Mat &imgLeft, cv::Mat &imgRight, cv::Mat &R_estim
 
     display_matches(rectifiedLeft, keypoints1, rectifiedRight, keypoints2, inlierMatches, block);
 
-    estimate_pose(pointsLeft, pointsRight, K_left_rect, R_estimated, T_estimated);
+    if (estimate_displacement)
+        estimate_pose(pointsLeft, pointsRight, K_left_rect, R_estimated, T_estimated);
 
-    triangulate(P_left_rect, P_right_rect, pointsLeft, pointsRight, points3D);
+    if (triangulate)
+        triangulate_points(P_left_rect, P_right_rect, pointsLeft, pointsRight, points3D);
 }
 
 static void display_disparity_map(cv::Mat disparityMap, bool block) {

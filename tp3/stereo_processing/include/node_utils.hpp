@@ -26,7 +26,7 @@ sensor_msgs::msg::PointCloud2 points3DtoCloudMsg(const std::vector<cv::Point3d> 
 
 Pose change_ref_system(Pose &pose_in, Pose &pose_ref);
 
-void correct_way(cv::Mat &T_estimated, const Pose &body_pose_wrt_map,
-                 const Pose &new_body_pose_wrt_map);
+void fix_way(cv::Mat &T_estimated, const Pose &body_pose_wrt_map,
+             const Pose &new_body_pose_wrt_map);
 
 #endif // NODE_UTILS_HPP

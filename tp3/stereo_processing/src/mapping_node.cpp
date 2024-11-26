@@ -1,5 +1,5 @@
-#include "cam_params.hpp"
 #include "mapping_node.hpp"
+#include "cam_params.hpp"
 #include "node_utils.hpp"
 #include "poses.hpp"
 #include "stereoproc.hpp"
@@ -15,8 +15,9 @@
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 
-MappingNode::MappingNode(const std::string &bag_path, const std::string &poses_csv, bool dense)
-    : Node("mapping_node"), dense_(dense) {
+MappingNode::MappingNode(const std::string &bag_path, const std::string &poses_csv, bool dense,
+                         bool estimate_displacement)
+    : Node("mapping_node"), dense_(dense), estimate_displacement_(estimate_displacement) {
     // Initialize publishers, broadcasters and the rosbag reader
     point_cloud_publisher_ =
         this->create_publisher<sensor_msgs::msg::PointCloud2>("point_cloud", 10);
@@ -110,7 +111,8 @@ void MappingNode::process_images(cv::Mat &image_cam0, cv::Mat &image_cam1,
     if (dense_)
         stereo_process_images_dense(image_cam0, image_cam1, points3D, block);
     else
-        stereo_process_images(image_cam0, image_cam1, R_estimated, T_estimated, points3D, block);
+        stereo_process_images(image_cam0, image_cam1, R_estimated, T_estimated, points3D, block,
+                              true, estimate_displacement_);
 
     if (!R_estimated.empty() && !T_estimated.empty()) {
         T_estimated *= base_line_btw_cams_;
