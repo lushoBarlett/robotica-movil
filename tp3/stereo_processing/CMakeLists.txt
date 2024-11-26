@@ -16,7 +16,15 @@ find_package(tf2_ros REQUIRED)
 include_directories(include)
 
 # Add executable
-add_executable(compvision src/main.cpp src/bagreader.cpp src/stereoproc.cpp src/cam_params.cpp src/poses.cpp)
+add_executable(compvision
+    src/main.cpp
+    src/mapping_node.cpp
+    src/stereoproc.cpp
+    src/trajectory_node.cpp
+    src/cam_params.cpp
+    src/poses.cpp
+    src/node_utils.cpp
+)
 
 # Link dependencies
 ament_target_dependencies(compvision

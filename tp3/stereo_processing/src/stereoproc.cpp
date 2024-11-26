@@ -220,8 +220,8 @@ static void filter_matched_keypoints(std::vector<cv::KeyPoint> &keypoints_l,
     }
 }
 
-void process_images(cv::Mat &imgLeft, cv::Mat &imgRight, cv::Mat &R_estimated, cv::Mat &T_estimated,
-                    std::vector<cv::Point3d> &points3D, bool block) {
+void stereo_process_images(cv::Mat &imgLeft, cv::Mat &imgRight, cv::Mat &R_estimated,
+                           cv::Mat &T_estimated, std::vector<cv::Point3d> &points3D, bool block) {
     cv::Mat rectifiedLeft, rectifiedRight;
 
     cv::Mat D_left, K_left, R_left, P_left;
@@ -271,8 +271,8 @@ static void display_disparity_map(cv::Mat disparityMap, bool block) {
         cv::waitKey(1);
 }
 
-void process_images_dense(cv::Mat &imgLeft, cv::Mat &imgRight,
-                          std::vector<cv::Point3d> &densePoints3D, bool block) {
+void stereo_process_images_dense(cv::Mat &imgLeft, cv::Mat &imgRight,
+                                 std::vector<cv::Point3d> &densePoints3D, bool block) {
     cv::Mat rectifiedLeft, rectifiedRight;
 
     cv::Mat Q, P_left_rect, P_right_rect;

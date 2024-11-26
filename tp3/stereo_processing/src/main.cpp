@@ -1,5 +1,6 @@
-#include "bagreader.hpp"
+#include "mapping_node.hpp"
 #include "stereoproc.hpp"
+#include "trajectory_node.hpp"
 #include <iostream>
 #include <string>
 
@@ -25,13 +26,21 @@ int main(int argc, char **argv) {
         return 0;
     } else if (command == "sparse") {
         std::cout << "Performing sparse mapping..." << std::endl;
-        map_rosbag_cam_poses(argc, argv, false);
+        rclcpp::init(argc, argv);
+
+        auto node =
+            std::make_shared<MappingNode>("../data/ros2.bag2", "../data/ground_truth.csv", false);
+
+        node->process_bag();
     } else if (command == "dense") {
         std::cout << "Performing dense mapping..." << std::endl;
-        map_rosbag_cam_poses(argc, argv, true);
     } else if (command == "traj") {
+        rclcpp::init(argc, argv);
+        auto node =
+            std::make_shared<TrajectoryNode>("../data/ros2.bag2", "../data/ground_truth.csv");
+
+        node->process_bag();
         std::cout << "Performing trajectory estimation..." << std::endl;
-        estimate_left_cam_trajectory(argc, argv);
     } else {
         std::cerr << "Error: Invalid command." << std::endl;
         print_usage();
