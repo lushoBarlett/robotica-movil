@@ -177,17 +177,28 @@ static void estimate_pose(const std::vector<cv::Point2f> &pointsLeft,
         return;
     }
 
-    cv::Mat E = cv::findEssentialMat(pointsLeft, pointsRight, K_left, cv::RANSAC);
+    cv::Mat inlierMask;
+    cv::Mat E =
+        cv::findEssentialMat(pointsLeft, pointsRight, K_left, cv::RANSAC, 0.99, 1.0, inlierMask);
 
     if (E.size() != cv::Size(3, 3)) {
         std::cout << "Essential matrix has incorrect size." << std::endl;
         return;
     }
 
-    cv::recoverPose(E, pointsLeft, pointsRight, K_left, R, T);
+    int numInliers = cv::recoverPose(E, pointsLeft, pointsRight, K_left, R, T, inlierMask);
 
-    if (T.at<double>(0, 0) < 0)
+    double inlierRatio = static_cast<double>(numInliers) / pointsLeft.size();
+
+    if (inlierRatio < 0.9) {
+        R.release();
+        T.release();
+        return;
+    }
+
+    if (T.at<double>(0, 0) < 0) {
         T = -T;
+    }
 
     T.convertTo(T, CV_32F);
     R.convertTo(R, CV_32F);
