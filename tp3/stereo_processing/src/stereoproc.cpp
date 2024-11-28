@@ -9,6 +9,11 @@
 #include <opencv2/imgproc.hpp>
 #include <vector>
 
+static void undistort_image(cv::Mat &image, const cv::Mat &K, const cv::Mat &D,
+                            cv::Mat &out_image) {
+    cv::undistort(image, out_image, K, D);
+}
+
 static void rectify_images(const cv::Mat &imgLeft, const cv::Mat &imgRight, cv::Mat &rectifiedLeft,
                            cv::Mat &rectifiedRight, cv::Mat &Q, cv::Mat &P_left_rect,
                            cv::Mat &P_right_rect) {
@@ -238,13 +243,6 @@ void stereo_process_images(cv::Mat &imgLeft, cv::Mat &imgRight, cv::Mat &R_estim
                            bool triangulate, bool estimate_displacement) {
     cv::Mat rectifiedLeft, rectifiedRight;
 
-    cv::Mat D_left, K_left, R_left, P_left;
-    cv::Mat D_right, K_right, R_right, P_right;
-    cv::Mat T, R;
-
-    setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T,
-                              R);
-
     cv::Mat Q, P_left_rect, P_right_rect;
     rectify_images(imgLeft, imgRight, rectifiedLeft, rectifiedRight, Q, P_left_rect, P_right_rect);
 
@@ -277,6 +275,44 @@ void stereo_process_images(cv::Mat &imgLeft, cv::Mat &imgRight, cv::Mat &R_estim
 
     if (triangulate)
         triangulate_points(P_left_rect, P_right_rect, pointsLeft, pointsRight, points3D);
+}
+
+void monocular_process_images(cv::Mat &img1, cv::Mat &img2, cv::Mat &R_estimated,
+                              cv::Mat &T_estimated, bool block) {
+    cv::Mat D_left, K_left, R_left, P_left;
+    cv::Mat D_right, K_right, R_right, P_right;
+    cv::Mat T, R;
+
+    setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T,
+                              R);
+
+    cv::Mat undistorted_img1, undistorted_img2;
+    undistort_image(img1, K_left, D_left, undistorted_img1);
+    undistort_image(img2, K_right, D_right, undistorted_img2);
+
+    std::vector<cv::KeyPoint> keypoints1;
+    std::vector<cv::KeyPoint> keypoints2;
+    cv::Mat descriptors1;
+    cv::Mat descriptors2;
+    extract_features(undistorted_img1, undistorted_img2, keypoints1, keypoints2, descriptors1,
+                     descriptors2);
+
+    std::vector<cv::DMatch> matches;
+    match_descriptors(descriptors1, descriptors2, matches);
+
+    std::vector<cv::Point2f> pointsLeft, pointsRight;
+    filter_matched_keypoints(keypoints1, keypoints2, matches, pointsLeft, pointsRight);
+
+    std::vector<cv::Point2f> transformedPoints;
+    std::vector<cv::DMatch> inlierMatches;
+    filter_correspondences(pointsLeft, pointsRight, matches, transformedPoints, inlierMatches);
+
+    filter_matched_keypoints(keypoints1, keypoints2, inlierMatches, pointsLeft, pointsRight);
+
+    display_matches(undistorted_img1, keypoints1, undistorted_img2, keypoints2, inlierMatches,
+                    block);
+
+    estimate_pose(pointsLeft, pointsRight, K_left, R_estimated, T_estimated);
 }
 
 static void display_disparity_map(cv::Mat disparityMap, bool block) {

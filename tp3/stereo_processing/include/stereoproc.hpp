@@ -10,4 +10,7 @@ void stereo_process_images(cv::Mat &imgLeft, cv::Mat &imgRight, cv::Mat &R_estim
 void stereo_process_images_dense(cv::Mat &imgLeft, cv::Mat &imgRight,
                                  std::vector<cv::Point3d> &densePoints3D, bool block);
 
+void monocular_process_images(cv::Mat &img1, cv::Mat &img2, cv::Mat &R_estimated,
+                              cv::Mat &T_estimated, bool block);
+
 #endif // STEREOPROC_HPP

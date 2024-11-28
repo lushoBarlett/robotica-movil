@@ -87,8 +87,8 @@ Pose change_ref_system(Pose &pose_in, Pose &pose_ref) {
     return pose_out;
 }
 
-void fix_way(cv::Mat &T_estimated, const Pose &body_pose_wrt_map,
-             const Pose &new_body_pose_wrt_map) {
+void adjust_translation_sign(cv::Mat &T_estimated, const Pose &body_pose_wrt_map,
+                             const Pose &new_body_pose_wrt_map) {
     // Calculate the displacement vector
     float delta_x = new_body_pose_wrt_map.x - body_pose_wrt_map.x;
     float delta_y = new_body_pose_wrt_map.y - body_pose_wrt_map.y;

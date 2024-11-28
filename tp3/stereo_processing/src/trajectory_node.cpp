@@ -104,16 +104,14 @@ void TrajectoryNode::process_images_and_update_pose(cv::Mat &image_0, cv::Mat &i
     }
 
     cv::Mat R_estimated, T_estimated;
-    std::vector<cv::Point3d> points3D;
-    // The boolean arguments are set to never triangulate and always estimate the pose
-    stereo_process_images(image_0, image_1, R_estimated, T_estimated, points3D, block, false, true);
+    monocular_process_images(image_0, image_1, R_estimated, T_estimated, block);
 
     if (!R_estimated.empty() && !T_estimated.empty()) {
         float distance_btw_poses =
             get_distance_btw_poses(body_pose_wrt_map_, new_body_pose_wrt_map);
         T_estimated *= distance_btw_poses;
 
-        fix_way(T_estimated, body_pose_wrt_map_, new_body_pose_wrt_map);
+        adjust_translation_sign(T_estimated, body_pose_wrt_map_, new_body_pose_wrt_map);
 
         Pose new_cam_pose_wrt_old_cam_pose = createPose(R_estimated, T_estimated);
         cam_pose_wrt_map_ = change_ref_system(new_cam_pose_wrt_old_cam_pose, cam_pose_wrt_map_);
