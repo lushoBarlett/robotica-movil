@@ -78,8 +78,8 @@ bool TrajectoryNode::process_bag_message(
                 return false;
 
             cam_pose_wrt_map_ = change_ref_system(cam_pose_wrt_body_, body_pose_wrt_map_);
-            publish_camera_pose(tf_broadcaster_, nullptr, "cam", "map", cam_pose_wrt_map_);
-            publish_camera_pose(tf_broadcaster_, nullptr, "body", "map", body_pose_wrt_map_);
+            publish_pose(tf_broadcaster_, nullptr, "cam", "map", cam_pose_wrt_map_);
+            publish_pose(tf_broadcaster_, nullptr, "body", "map", body_pose_wrt_map_);
 
             image_msg_0 = image_msg;
         } else {
@@ -116,8 +116,8 @@ void TrajectoryNode::process_images_and_update_pose(cv::Mat &image_0, cv::Mat &i
         Pose new_cam_pose_wrt_old_cam_pose = createPose(R_estimated, T_estimated);
         cam_pose_wrt_map_ = change_ref_system(new_cam_pose_wrt_old_cam_pose, cam_pose_wrt_map_);
 
-        publish_camera_pose(tf_broadcaster_, nullptr, "cam", "map", cam_pose_wrt_map_);
-        publish_camera_pose(tf_broadcaster_, nullptr, "body", "map", new_body_pose_wrt_map);
+        publish_pose(tf_broadcaster_, nullptr, "cam", "map", cam_pose_wrt_map_);
+        publish_pose(tf_broadcaster_, nullptr, "body", "map", new_body_pose_wrt_map);
 
         body_pose_wrt_map_ = new_body_pose_wrt_map;
     }

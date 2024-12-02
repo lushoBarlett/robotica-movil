@@ -31,10 +31,8 @@ MappingNode::MappingNode(const std::string &bag_path, const std::string &poses_c
 
     signal(SIGTSTP, handleSignal);
     // Publish static transforms
-    publish_camera_pose(nullptr, static_broadcaster_, "left_cam", "body",
-                        get_left_cam_pose_wrt_body());
-    publish_camera_pose(nullptr, static_broadcaster_, "right_cam", "body",
-                        get_right_cam_pose_wrt_body());
+    publish_pose(nullptr, static_broadcaster_, "left_cam", "body", get_left_cam_pose_wrt_body());
+    publish_pose(nullptr, static_broadcaster_, "right_cam", "body", get_right_cam_pose_wrt_body());
 }
 
 void MappingNode::process_bag() {
@@ -103,7 +101,7 @@ void MappingNode::process_images(cv::Mat &image_cam0, cv::Mat &image_cam1,
         return;
     }
 
-    publish_camera_pose(tf_broadcaster_, nullptr, "body", "map", closest_pose);
+    publish_pose(tf_broadcaster_, nullptr, "body", "map", closest_pose);
 
     cv::Mat R_estimated, T_estimated;
     std::vector<cv::Point3d> points3D;
@@ -117,8 +115,8 @@ void MappingNode::process_images(cv::Mat &image_cam0, cv::Mat &image_cam1,
     if (!R_estimated.empty() && !T_estimated.empty()) {
         T_estimated *= base_line_btw_cams_;
         Pose right_cam_pose_wrt_left_cam = createPose(R_estimated, T_estimated);
-        publish_camera_pose(tf_broadcaster_, nullptr, "right_cam_est", "left_cam",
-                            right_cam_pose_wrt_left_cam);
+        publish_pose(tf_broadcaster_, nullptr, "right_cam_est", "left_cam",
+                     right_cam_pose_wrt_left_cam);
     }
 
     auto cloud_msg = points3DtoCloudMsg(points3D, "left_cam");

@@ -12,10 +12,10 @@ void handleSignal(int signal) {
     }
 }
 
-void publish_camera_pose(
-    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster,
-    const std::shared_ptr<tf2_ros::StaticTransformBroadcaster> &static_broadcaster,
-    const std::string &child_frame_id, const std::string &frame_id, const Pose &pose) {
+void publish_pose(std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster,
+                  const std::shared_ptr<tf2_ros::StaticTransformBroadcaster> &static_broadcaster,
+                  const std::string &child_frame_id, const std::string &frame_id,
+                  const Pose &pose) {
     geometry_msgs::msg::TransformStamped transform_stamped;
 
     // Set header and frame information
