@@ -27,6 +27,9 @@ TrajectoryNode::TrajectoryNode(const std::string &bag_path, const std::string &g
     signal(SIGTSTP, handleSignal);
     cam_pose_wrt_body_ = get_left_cam_pose_wrt_body();
 
+    // Load camera calibration parameters
+    load_camera_parameters();
+
     cam_file.open(cam_filename);
     body_file.open(body_filename);
     cam_file
@@ -129,9 +132,7 @@ void TrajectoryNode::process_images_and_update_pose(cv::Mat &image_0, cv::Mat &i
     if (!R_estimated.empty() && !T_estimated.empty()) {
         float distance_btw_poses =
             get_distance_btw_poses(body_pose_wrt_map_, new_body_pose_wrt_map);
-        T_estimated *= distance_btw_poses;
-
-        adjust_translation_sign(T_estimated, body_pose_wrt_map_, new_body_pose_wrt_map);
+        T_estimated *= -distance_btw_poses;
 
         Pose new_cam_pose_wrt_old_cam_pose = createPose(R_estimated, T_estimated);
         cam_pose_wrt_map_ = change_ref_system(new_cam_pose_wrt_old_cam_pose, cam_pose_wrt_map_);

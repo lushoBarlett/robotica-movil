@@ -4,9 +4,11 @@
 #include "poses.hpp"
 #include <opencv2/core.hpp>
 
-void setupStereoCameraMatrices(cv::Mat &D_left, cv::Mat &K_left, cv::Mat &R_left, cv::Mat &P_left,
-                               cv::Mat &D_right, cv::Mat &K_right, cv::Mat &R_right,
-                               cv::Mat &P_right, cv::Mat &T, cv::Mat &R);
+extern cv::Mat left_cam_param_D, left_cam_param_K, left_cam_param_R, left_cam_param_P;
+extern cv::Mat right_cam_param_D, right_cam_param_K, right_cam_param_R, right_cam_param_P;
+extern cv::Mat cams_param_T, cams_param_R;
+
+void load_camera_parameters();
 
 float get_base_line_btw_cams();
 

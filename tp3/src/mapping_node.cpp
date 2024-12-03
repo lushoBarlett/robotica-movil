@@ -29,6 +29,9 @@ MappingNode::MappingNode(const std::string &bag_path, const std::string &poses_c
     poses_ = readGroundTruthCSV(poses_csv);
     base_line_btw_cams_ = get_base_line_btw_cams();
 
+    // Load camera calibration parameters
+    load_camera_parameters();
+
     signal(SIGTSTP, handleSignal);
     // Publish static transforms
     publish_pose(nullptr, static_broadcaster_, "left_cam", "body", get_left_cam_pose_wrt_body());
@@ -113,6 +116,9 @@ void MappingNode::process_images(cv::Mat &image_cam0, cv::Mat &image_cam1,
                               true, estimate_displacement_);
 
     if (!R_estimated.empty() && !T_estimated.empty()) {
+        if (T_estimated.at<float>(0, 0) < 0)
+            T_estimated = -T_estimated;
+
         T_estimated *= base_line_btw_cams_;
         Pose right_cam_pose_wrt_left_cam = createPose(R_estimated, T_estimated);
         publish_pose(tf_broadcaster_, nullptr, "right_cam_est", "left_cam",

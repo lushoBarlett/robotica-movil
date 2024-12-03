@@ -22,27 +22,20 @@ static void rectify_images(const cv::Mat &imgLeft, const cv::Mat &imgRight, cv::
         return;
     }
 
-    cv::Mat D_left, K_left, R_left, P_left;
-    cv::Mat D_right, K_right, R_right, P_right;
-    cv::Mat T, R;
-
-    setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T,
-                              R);
-
     // Output matrices for rectification
     cv::Mat R1, R2;
     cv::Size imageSize = imgLeft.size();
-    cv::stereoRectify(K_left, D_left, K_right, D_right, imageSize, R, T, R1, R2, P_left_rect,
-                      P_right_rect, Q);
+    cv::stereoRectify(left_cam_param_K, left_cam_param_D, right_cam_param_K, right_cam_param_D,
+                      imageSize, cams_param_R, cams_param_T, R1, R2, P_left_rect, P_right_rect, Q);
 
     // Rectification maps
     cv::Mat map1Left, map2Left, map1Right, map2Right;
 
     // Compute rectification maps for both images
-    cv::initUndistortRectifyMap(K_left, D_left, R1, P_left_rect, imageSize, CV_16SC2, map1Left,
-                                map2Left);
-    cv::initUndistortRectifyMap(K_right, D_right, R2, P_right_rect, imageSize, CV_16SC2, map1Right,
-                                map2Right);
+    cv::initUndistortRectifyMap(left_cam_param_K, left_cam_param_D, R1, P_left_rect, imageSize,
+                                CV_16SC2, map1Left, map2Left);
+    cv::initUndistortRectifyMap(right_cam_param_K, right_cam_param_D, R2, P_right_rect, imageSize,
+                                CV_16SC2, map1Right, map2Right);
 
     // Apply rectification
     cv::remap(imgLeft, rectifiedLeft, map1Left, map2Left, cv::INTER_LINEAR);
@@ -201,10 +194,6 @@ static void estimate_pose(const std::vector<cv::Point2f> &pointsLeft,
         return;
     }
 
-    if (T.at<double>(0, 0) < 0) {
-        T = -T;
-    }
-
     T.convertTo(T, CV_32F);
     R.convertTo(R, CV_32F);
 }
@@ -279,16 +268,9 @@ void stereo_process_images(cv::Mat &imgLeft, cv::Mat &imgRight, cv::Mat &R_estim
 
 void monocular_process_images(cv::Mat &img1, cv::Mat &img2, cv::Mat &R_estimated,
                               cv::Mat &T_estimated, bool block) {
-    cv::Mat D_left, K_left, R_left, P_left;
-    cv::Mat D_right, K_right, R_right, P_right;
-    cv::Mat T, R;
-
-    setupStereoCameraMatrices(D_left, K_left, R_left, P_left, D_right, K_right, R_right, P_right, T,
-                              R);
-
     cv::Mat undistorted_img1, undistorted_img2;
-    undistort_image(img1, K_left, D_left, undistorted_img1);
-    undistort_image(img2, K_right, D_right, undistorted_img2);
+    undistort_image(img1, left_cam_param_K, left_cam_param_D, undistorted_img1);
+    undistort_image(img2, left_cam_param_K, left_cam_param_D, undistorted_img2);
 
     std::vector<cv::KeyPoint> keypoints1;
     std::vector<cv::KeyPoint> keypoints2;
@@ -312,7 +294,7 @@ void monocular_process_images(cv::Mat &img1, cv::Mat &img2, cv::Mat &R_estimated
     display_matches(undistorted_img1, keypoints1, undistorted_img2, keypoints2, inlierMatches,
                     block);
 
-    estimate_pose(pointsLeft, pointsRight, K_left, R_estimated, T_estimated);
+    estimate_pose(pointsLeft, pointsRight, left_cam_param_K, R_estimated, T_estimated);
 }
 
 static void display_disparity_map(cv::Mat disparityMap, bool block) {
