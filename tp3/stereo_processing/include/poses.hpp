@@ -18,5 +18,6 @@ std::vector<Pose> readGroundTruthCSV(const std::string &csv_file);
 bool findClosestPose(const std::vector<Pose> poses, double ros_time_seconds, double tolerance,
                      Pose *closest_pose);
 float get_distance_btw_poses(Pose &body_pose_wrt_map, Pose &new_body_pose_wrt_map);
+void write_pose(std::ofstream &file, const Pose &pose);
 
 #endif // POSE_UTILS_HPP

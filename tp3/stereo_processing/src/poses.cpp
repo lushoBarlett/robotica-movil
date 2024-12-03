@@ -153,3 +153,8 @@ float get_distance_btw_poses(Pose &body_pose_wrt_map, Pose &new_body_pose_wrt_ma
 
     return sqrt(dx * dx + dy * dy + dz * dz);
 }
+
+void write_pose(std::ofstream &file, const Pose &pose) {
+    file << pose.timestamp << "," << pose.x << "," << pose.y << "," << pose.z << "," << pose.qw
+         << "," << pose.qx << "," << pose.qy << "," << pose.qz << std::endl;
+}

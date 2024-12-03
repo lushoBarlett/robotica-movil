@@ -58,8 +58,9 @@ int main(int argc, char **argv) {
     } else if (command == "4") {
         std::cout << "Performing trajectory estimation with monocular vision..." << std::endl;
         rclcpp::init(argc, argv);
-        auto node =
-            std::make_shared<TrajectoryNode>("../data/ros2.bag2", "../data/ground_truth.csv");
+        auto node = std::make_shared<TrajectoryNode>(
+            "../data/ros2.bag2", "../data/ground_truth.csv",
+            "../data/trajectory_estimation/cam.csv", "../data/trajectory_estimation/body.csv");
 
         node->process_bag();
     } else {

@@ -6,6 +6,7 @@
 #include "poses.hpp"
 #include "stereoproc.hpp"
 #include <cv_bridge/cv_bridge.h>
+#include <fstream>
 #include <geometry_msgs/msg/pose.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
@@ -19,7 +20,8 @@
 
 class TrajectoryNode : public rclcpp::Node {
   public:
-    TrajectoryNode(const std::string &bag_path, const std::string &ground_truth_path);
+    TrajectoryNode(const std::string &bag_path, const std::string &ground_truth_path,
+                   const std::string &cam_filename, const std::string &body_filename);
     void process_bag();
 
   private:
@@ -33,6 +35,7 @@ class TrajectoryNode : public rclcpp::Node {
     void process_images_and_update_pose(cv::Mat &image_0, cv::Mat &image_1,
                                         rclcpp::Time timestamp_image_1);
 
+    std::ofstream cam_file, body_file;
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
     std::unique_ptr<rosbag2_cpp::Reader> reader_;
     std::vector<Pose> poses_;

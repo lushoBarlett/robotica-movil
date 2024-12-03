@@ -15,7 +15,8 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <vector>
 
-TrajectoryNode::TrajectoryNode(const std::string &bag_path, const std::string &ground_truth_csv)
+TrajectoryNode::TrajectoryNode(const std::string &bag_path, const std::string &ground_truth_csv,
+                               const std::string &cam_filename, const std::string &body_filename)
     : Node("traj_estimator_node") {
 
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
@@ -25,6 +26,23 @@ TrajectoryNode::TrajectoryNode(const std::string &bag_path, const std::string &g
 
     signal(SIGTSTP, handleSignal);
     cam_pose_wrt_body_ = get_left_cam_pose_wrt_body();
+
+    cam_file.open(cam_filename);
+    body_file.open(body_filename);
+    cam_file
+        << "#timestamp, p_RS_R_x [m], p_RS_R_y [m], p_RS_R_z [m], q_RS_w [], q_RS_x [], q_RS_y "
+           "[], q_RS_z []"
+        << std::endl;
+
+    body_file
+        << "#timestamp, p_RS_R_x [m], p_RS_R_y [m], p_RS_R_z [m], q_RS_w [], q_RS_x [], q_RS_y "
+           "[], q_RS_z []"
+        << std::endl;
+
+    if (!cam_file.is_open() || !body_file.is_open()) {
+        std::cerr << "Error opening files for dumping the poses" << std::endl;
+        return;
+    }
 }
 
 void TrajectoryNode::process_bag() {
@@ -80,6 +98,8 @@ bool TrajectoryNode::process_bag_message(
             cam_pose_wrt_map_ = change_ref_system(cam_pose_wrt_body_, body_pose_wrt_map_);
             publish_pose(tf_broadcaster_, nullptr, "cam", "map", cam_pose_wrt_map_);
             publish_pose(tf_broadcaster_, nullptr, "body", "map", body_pose_wrt_map_);
+            write_pose(cam_file, cam_pose_wrt_map_);
+            write_pose(body_file, body_pose_wrt_map_);
 
             image_msg_0 = image_msg;
         } else {
@@ -118,6 +138,8 @@ void TrajectoryNode::process_images_and_update_pose(cv::Mat &image_0, cv::Mat &i
 
         publish_pose(tf_broadcaster_, nullptr, "cam", "map", cam_pose_wrt_map_);
         publish_pose(tf_broadcaster_, nullptr, "body", "map", new_body_pose_wrt_map);
+        write_pose(cam_file, cam_pose_wrt_map_);
+        write_pose(body_file, new_body_pose_wrt_map);
 
         body_pose_wrt_map_ = new_body_pose_wrt_map;
     }
