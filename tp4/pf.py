@@ -47,7 +47,10 @@ class ParticleFilter:
             self.weights[i] = env.likelihood(minimized_angle(env.observe(self.particles[i, :], marker_id) - z), self.beta)
 
         # normalize
-        self.weights /= np.sum(self.weights)
+        if np.sum(self.weights) == 0:
+            self.weights = np.ones(self.num_particles) / self.num_particles
+        else:
+            self.weights /= np.sum(self.weights)
 
         self.particles, self.weights = self.resample(self.particles, self.weights)
 

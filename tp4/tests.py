@@ -1,4 +1,6 @@
 import os
+import matplotlib.pyplot as plt
+import numpy as np
 
 r = [1/64, 1/16, 1/4, 4, 16, 64]
 
@@ -31,17 +33,18 @@ def test_pf():
 def test_pf_extensive():
     print("Running PF extensive tests")
 
-    with open("pfext.txt", "w") as f:
-        f.write("")
-
     particles = [20, 50, 500]
-    for i in r:
-        for n in particles:
+
+    for n in particles:
+        with open(f"pfext{n}.txt", "w") as f:
+            f.write("")
+
+        for i in r:
             print(f"Running 10 runs for r = {i} and n = {n}")
             for _ in range(10):
-                command = f"python localization.py pf --data-factor {i} --filter-factor {i} --num-particles {n} >> pfext.txt"
+                command = f"python localization.py pf --data-factor {i} --filter-factor {i} --num-particles {n} >> pfext{n}.txt"
                 print("$", command)
-                os.system(f"python localization.py pf --data-factor {i} --filter-factor {i} --num-particles {n} >> pfext.txt")
+                os.system(f"python localization.py pf --data-factor {i} --filter-factor {i} --num-particles {n} >> pfext{n}.txt")
 
 """
 Example output of one run:
@@ -83,8 +86,6 @@ Graficar el error de posición medio y ANEES a medida que los factores α, β de
 r mientras los datos son generados con los valores por defecto.
 """
 def plot(runs: list[Run], prefix: str = "", log=False):
-    import matplotlib.pyplot as plt
-
     x = sorted(set(run.data_factor for run in runs))
     y = []; y2 = []
     for r in x:
@@ -100,16 +101,29 @@ def plot(runs: list[Run], prefix: str = "", log=False):
 
         y2.append(avg_anees)
 
+    plt.figure(figsize=(10, 6), dpi=120)
+    plt.grid(color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
+
     if log:
         plt.xscale("log")
     else:
         plt.xscale("linear")
 
+    normalized = [i / (max(y) - min(y)) for i in y]
+
+    fig, ax1 = plt.subplots()
+    ax1.plot(x, y)
+    ax2 = ax1.twinx()
+    ax2.plot(x, normalized, color="red")
+
     plt.plot(x, y)
     plt.xlabel("r")
     plt.ylabel("Mean position error")
-    plt.show()
     plt.savefig(prefix + "mean_position_error.png")
+    plt.show()
+
+    plt.figure(figsize=(10, 6), dpi=120)
+    plt.grid(color='gray', linestyle='--', linewidth=0.5, alpha=0.7)
 
     if log:
         plt.xscale("log")
@@ -120,8 +134,48 @@ def plot(runs: list[Run], prefix: str = "", log=False):
     plt.plot(x, y2, label="ANEES")
     plt.xlabel("r")
     plt.legend()
-    plt.show()
     plt.savefig(prefix + "mean_position_error_and_anees.png")
+    plt.show()
+
+def plot_normalized(x, ys):
+    normalized = [(y - np.min(y)) / (np.max(y) - np.min(y)) for y in ys]
+
+    colors = plt.cm.tab10(np.linspace(0, 1, len(ys)))
+
+    plt.figure(figsize=(10, 6))
+    for i, n in enumerate(normalized):
+        color = colors[i]
+
+        plt.plot(x, n, label=f'Line {i + 1}', color=color)
+
+        min_index = np.argmin(n)
+        max_index = np.argmax(n)
+
+        plt.scatter(x[min_index], 0, color=color, zorder=5)  # Min point
+        plt.scatter(x[max_index], 1, color=color, zorder=5)  # Max point
+
+        plt.annotate(
+            f"Min: {ys[i][min_index]:.2f}",
+            (x[min_index], 0),
+            textcoords="offset points",
+            xytext=(-40, 5),
+            ha='center',
+            color=color
+        )
+
+        plt.annotate(
+            f"Max: {ys[i][max_index]:.2f}",
+            (x[max_index], 1),
+            textcoords="offset points",
+            xytext=(40, -15),
+            ha='center',
+            color=color
+        )
+
+    plt.gca().axes.yaxis.set_visible(False)
+    plt.grid(color='gray', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.show()
 
 def plot_runs_from_file(filename: str, log=False):
     with open(filename, "r") as f:
@@ -136,10 +190,13 @@ def plot_runs_from_file(filename: str, log=False):
         plot(runs, filename.split(".")[0] + "_", log)
 
 if __name__ == "__main__":
-    # used initially
+    # used in the first run because it takes a long time
     # test_ekf()
     # test_pf()
     # test_pf_extensive()
-    # plot_runs_from_file("ekf.txt")
-    # plot_runs_from_file("pf.txt")
-    plot_runs_from_file("pfext.txt", log=True)
+
+    plot_runs_from_file("ekf.txt", log=True)
+    plot_runs_from_file("pf.txt", log=True)
+
+    for n in [20, 50, 500]:
+        plot_runs_from_file(f"pfext{n}.txt", log=True)
