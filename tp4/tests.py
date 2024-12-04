@@ -6,7 +6,8 @@ import numpy as np
 R = [1/64, 1/16, 1/4, 4, 16, 64]
 
 
-COLORS = ["red", "blue", "green", "orange", "purple", "brown"]
+# make each pair of colors very close to each other
+COLORS = ["#2f6794", "#7f8ff0", "#4c902c", "#20f070", "#a62728", "#f99098"]
 
 
 PARTICLES = [20, 50, 500]
