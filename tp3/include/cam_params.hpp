@@ -8,7 +8,7 @@ extern cv::Mat left_cam_param_D, left_cam_param_K, left_cam_param_R, left_cam_pa
 extern cv::Mat right_cam_param_D, right_cam_param_K, right_cam_param_R, right_cam_param_P;
 extern cv::Mat cams_param_T, cams_param_R;
 
-void load_camera_parameters();
+void load_camera_parameters(const std::string& filename);
 
 float get_base_line_btw_cams();
 

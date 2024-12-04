@@ -1,10 +1,24 @@
 #include "poses.hpp"
 #include <opencv2/core.hpp>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <opencv2/opencv.hpp>
+
+cv::Mat left_cam_param_D;
+cv::Mat left_cam_param_K;
+cv::Mat left_cam_param_R;
+cv::Mat left_cam_param_P;
+cv::Mat right_cam_param_D;
+cv::Mat right_cam_param_K;
+cv::Mat right_cam_param_R;
+cv::Mat right_cam_param_P;
+cv::Mat cams_param_T;
+cv::Mat cams_param_R;
 
 float get_base_line_btw_cams() {
-    cv::Mat t = (cv::Mat_<float>(3, 1) << -0.10960005816018638, 0.000371686310074846,
-                 0.0022803493632622346);
-    return cv::norm(t);
+    return cv::norm(cams_param_t);
 }
 
 Pose get_left_cam_pose_wrt_body() {
@@ -21,45 +35,65 @@ Pose get_right_cam_pose_wrt_body() {
     return pose;
 }
 
-cv::Mat left_cam_param_D;
-cv::Mat left_cam_param_K;
-cv::Mat left_cam_param_R;
-cv::Mat left_cam_param_P;
-cv::Mat right_cam_param_D;
-cv::Mat right_cam_param_K;
-cv::Mat right_cam_param_R;
-cv::Mat right_cam_param_P;
-cv::Mat cams_param_T;
-cv::Mat cams_param_R;
+static
+std::vector<double> parseLine(const std::string& line) {
+    std::vector<double> values;
+    std::stringstream ss(line.substr(line.find('=') + 1));
+    std::string number;
 
-void load_camera_parameters() {
-    left_cam_param_D = (cv::Mat_<double>(1, 5) << -0.28528567852276154, 0.0755173390138138,
-                0.00042325617975809654, 6.82046332766036e-05, 0.0);
-    left_cam_param_K = (cv::Mat_<double>(3, 3) << 461.4083655730878, 0.0, 364.74303421116605, 0.0,
-                460.1948345348428, 247.5842300899086, 0.0, 0.0, 1.0);
-    left_cam_param_R =
-        (cv::Mat_<double>(3, 3) << 0.9999291388891489, -0.0007704353780885541,
-            -0.011879546697297074, 0.0008675722844585223, 0.9999662172978196, 0.008173835172110863,
-            0.011872847962317707, -0.008183562330537164, 0.9998960269892295);
-    left_cam_param_P = (cv::Mat_<double>(3, 4) << 439.40304644813335, 0.0, 383.1048240661621, 0.0, 0.0,
-                439.40304644813335, 255.35926055908203, 0.0, 0.0, 0.0, 1.0, 0.0);
+    while (std::getline(ss, number, ',')) {
+        number.erase(std::remove(number.begin(), number.end(), '['), number.end());
+        number.erase(std::remove(number.begin(), number.end(), ']'), number.end());
+        number.erase(std::remove(number.begin(), number.end(), ' '), number.end());
+        if (!number.empty()) {
+            values.push_back(std::stod(number));
+        }
+    }
 
-    // Right camera parameters
-    right_cam_param_D = (cv::Mat_<double>(1, 5) << -0.2852945932144836, 0.07556094233309328,
-                -0.00016457104721592913, 4.67978311690005e-05, 0.0);
-    right_cam_param_K = (cv::Mat_<double>(3, 3) << 461.22152512371986, 0.0, 373.630015164131, 0.0,
-                460.3701926236939, 253.4813239671563, 0.0, 0.0, 1.0);
-    right_cam_param_R = (cv::Mat_<double>(3, 3) << 0.999777876762165, -0.003390543364174486,
-                -0.020801474770623506, 0.003220288489111239, 0.9999610891135602,
-                -0.00821279494868492, 0.020828511204215524, 0.008143983946318862, 0.999749893046505);
-    right_cam_param_P =
-        (cv::Mat_<double>(3, 4) << 439.40304644813335, 0.0, 383.1048240661621, -48.169298967129315,
-            0.0, 439.40304644813335, 255.35926055908203, 0.0, 0.0, 0.0, 1.0, 0.0);
+    return values;
+}
 
-    // Rotation and translation between the cameras
-    cams_param_T = (cv::Mat_<double>(3, 1) << -0.10960005816018638, 0.000371686310074846,
-            0.0022803493632622346);
-    cams_param_R = (cv::Mat_<double>(3, 3) << 0.9999571189710634, 0.0022794640328858873, 0.008975759734597452,
-            -0.0024260722968527915, 0.9998632731202098, 0.016356932430961323, -0.008937247467810473,
-            -0.01637800687090375, 0.9998259280988044);
+void load_camera_parameters(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return;
+    }
+
+    std::string line;
+    bool is_left = false, is_right = false;
+
+    while (std::getline(file, line)) {
+        if (line.find("Left:") != std::string::npos) {
+            is_left = true;
+            is_right = false;
+            continue;
+        }
+        if (line.find("Right:") != std::string::npos) {
+            is_left = false;
+            is_right = true;
+            continue;
+        }
+
+        auto values = parseLine(line);
+        if (line.find("self.T =") != std::string::npos) {
+            cams_param_T = cv::Mat(3, 1, CV_64F, values.data()).clone();
+        } else if (line.find("self.R =") != std::string::npos) {
+            cams_param_R = cv::Mat(3, 3, CV_64F, values.data()).clone();
+        } else if (line.find("D =") != std::string::npos) {
+            if (is_left) left_cam_param_D = cv::Mat(1, 5, CV_64F, values.data()).clone();
+            if (is_right) right_cam_param_D = cv::Mat(1, 5, CV_64F, values.data()).clone();
+        } else if (line.find("K =") != std::string::npos) {
+            if (is_left) left_cam_param_K = cv::Mat(3, 3, CV_64F, values.data()).clone();
+            if (is_right) right_cam_param_K = cv::Mat(3, 3, CV_64F, values.data()).clone();
+        } else if (line.find("R =") != std::string::npos) {
+            if (is_left) left_cam_param_R = cv::Mat(3, 3, CV_64F, values.data()).clone();
+            if (is_right) right_cam_param_R = cv::Mat(3, 3, CV_64F, values.data()).clone();
+        } else if (line.find("P =") != std::string::npos) {
+            if (is_left) left_cam_param_P = cv::Mat(3, 4, CV_64F, values.data()).clone();
+            if (is_right) right_cam_param_P = cv::Mat(3, 4, CV_64F, values.data()).clone();
+        }
+    }
+
+    file.close();
 }

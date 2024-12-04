@@ -22,6 +22,8 @@ int main(int argc, char **argv) {
 
     std::string command = argv[1];
 
+    load_camera_parameters("../data/calibrationdata/out.txt");
+
     if (command == "--help" || command == "-h") {
         print_usage();
         return 0;

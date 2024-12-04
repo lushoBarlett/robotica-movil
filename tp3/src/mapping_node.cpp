@@ -29,9 +29,6 @@ MappingNode::MappingNode(const std::string &bag_path, const std::string &poses_c
     poses_ = readGroundTruthCSV(poses_csv);
     base_line_btw_cams_ = get_base_line_btw_cams();
 
-    // Load camera calibration parameters
-    load_camera_parameters();
-
     signal(SIGTSTP, handleSignal);
     // Publish static transforms
     publish_pose(nullptr, static_broadcaster_, "left_cam", "body", get_left_cam_pose_wrt_body());

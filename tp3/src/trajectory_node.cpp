@@ -27,9 +27,6 @@ TrajectoryNode::TrajectoryNode(const std::string &bag_path, const std::string &g
     signal(SIGTSTP, handleSignal);
     cam_pose_wrt_body_ = get_left_cam_pose_wrt_body();
 
-    // Load camera calibration parameters
-    load_camera_parameters();
-
     cam_file.open(cam_filename);
     body_file.open(body_filename);
     cam_file
