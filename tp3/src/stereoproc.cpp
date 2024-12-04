@@ -188,7 +188,7 @@ static void estimate_pose(const std::vector<cv::Point2f> &pointsLeft,
 
     double inlierRatio = static_cast<double>(numInliers) / pointsLeft.size();
 
-    if (inlierRatio < 0.9) {
+    if (inlierRatio < 0.8) {
         R.release();
         T.release();
         return;

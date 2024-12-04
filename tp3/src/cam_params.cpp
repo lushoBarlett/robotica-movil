@@ -18,7 +18,7 @@ cv::Mat cams_param_T;
 cv::Mat cams_param_R;
 
 float get_base_line_btw_cams() {
-    return cv::norm(cams_param_t);
+    return cv::norm(cams_param_T);
 }
 
 Pose get_left_cam_pose_wrt_body() {
