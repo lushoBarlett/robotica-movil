@@ -83,7 +83,7 @@ sudo docker build -t compvision .
 Puede cambiar el número del final para probar otros modos de ejecución.
 
 ```bash
-sudo docker run --rm -it --net=host --env="DISPLAY=$DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" --volume="/home/tomas/5° Año/robotica-movil/tp3/data:/usr/src/app/data" compvision 1
+sudo docker run --rm -it --net=host --env="DISPLAY=$DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" --volume="<path>/robotica-movil/tp3/data:/usr/src/app/data" compvision 1
 ```
 
 Se puede debuggear de la misma manera comentada anteriormente.
