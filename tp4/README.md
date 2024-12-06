@@ -32,3 +32,12 @@ flags available to you, run
 ```bash
 $ python localization.py -h
 ```
+
+## Tests
+
+To run the tests, run
+```bash
+$ python tests.py
+```
+
+This runs the simulation multiple times with different algorithms and parameters, outputs the results to a file, and then plots the results. The simulations are expensive so they are commented out. Instead, precomputed outputs and images are left in the repository.

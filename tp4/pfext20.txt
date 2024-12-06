@@ -1,360 +1,360 @@
 Data factor: 0.015625
 Filter factor: 0.015625
 --------------------------------------------------------------------------------
-Mean position error: 19.13052813322402
-Mean Mahalanobis error: 2589.5506110196125
-ANEES: 863.1835370065374
+Mean position error: 25.86072338487852
+Mean Mahalanobis error: 230693.16492725414
+ANEES: 76897.72164241805
 Data factor: 0.015625
 Filter factor: 0.015625
 --------------------------------------------------------------------------------
-Mean position error: 19.545824896722905
-Mean Mahalanobis error: 1311.0691180258666
-ANEES: 437.02303934195555
+Mean position error: 19.698652559736466
+Mean Mahalanobis error: 1843.6552044423597
+ANEES: 614.5517348141199
 Data factor: 0.015625
 Filter factor: 0.015625
 --------------------------------------------------------------------------------
-Mean position error: 69.66763759190252
-Mean Mahalanobis error: 196556.3353258414
-ANEES: 65518.778441947135
+Mean position error: 27.718736862802015
+Mean Mahalanobis error: 14626.045903255172
+ANEES: 4875.34863441839
 Data factor: 0.015625
 Filter factor: 0.015625
 --------------------------------------------------------------------------------
-Mean position error: 12.309905793176432
-Mean Mahalanobis error: 3017.7405937697245
-ANEES: 1005.9135312565749
+Mean position error: 28.55318409074729
+Mean Mahalanobis error: 2580.6753410400465
+ANEES: 860.2251136800155
 Data factor: 0.015625
 Filter factor: 0.015625
 --------------------------------------------------------------------------------
-Mean position error: 10.23435224987727
-Mean Mahalanobis error: 294.4257691408916
-ANEES: 98.14192304696387
+Mean position error: 33.382405365029356
+Mean Mahalanobis error: 4054.1436327909882
+ANEES: 1351.3812109303294
 Data factor: 0.015625
 Filter factor: 0.015625
 --------------------------------------------------------------------------------
-Mean position error: 16.906093225577663
-Mean Mahalanobis error: 2107.3067898769655
-ANEES: 702.4355966256552
+Mean position error: 12.487511630625926
+Mean Mahalanobis error: 9869.016020189303
+ANEES: 3289.672006729768
 Data factor: 0.015625
 Filter factor: 0.015625
 --------------------------------------------------------------------------------
-Mean position error: 19.686568660612682
-Mean Mahalanobis error: 4415.879744723212
-ANEES: 1471.9599149077374
+Mean position error: 14.698860990631212
+Mean Mahalanobis error: 1173.1280147706068
+ANEES: 391.04267159020225
 Data factor: 0.015625
 Filter factor: 0.015625
 --------------------------------------------------------------------------------
-Mean position error: 10.553102820423765
-Mean Mahalanobis error: 206662.96050843995
-ANEES: 68887.65350281332
+Mean position error: 50.440158218087625
+Mean Mahalanobis error: 71965.55161511096
+ANEES: 23988.517205036987
 Data factor: 0.015625
 Filter factor: 0.015625
 --------------------------------------------------------------------------------
-Mean position error: 18.203688942286032
-Mean Mahalanobis error: 16836.461907774716
-ANEES: 5612.153969258238
+Mean position error: 13.917641370984056
+Mean Mahalanobis error: 5707.600425994781
+ANEES: 1902.5334753315938
 Data factor: 0.015625
 Filter factor: 0.015625
 --------------------------------------------------------------------------------
-Mean position error: 18.589933325256332
-Mean Mahalanobis error: 1837.7911065318915
-ANEES: 612.5970355106305
+Mean position error: 17.121498352315083
+Mean Mahalanobis error: 2425.217263960816
+ANEES: 808.4057546536054
 Data factor: 0.0625
 Filter factor: 0.0625
 --------------------------------------------------------------------------------
-Mean position error: 16.727334779144417
-Mean Mahalanobis error: 755.1573533653285
-ANEES: 251.71911778844284
+Mean position error: 11.740765143130133
+Mean Mahalanobis error: 103.71027502566531
+ANEES: 34.57009167522177
 Data factor: 0.0625
 Filter factor: 0.0625
 --------------------------------------------------------------------------------
-Mean position error: 21.77012443286277
-Mean Mahalanobis error: 620.131375825997
-ANEES: 206.71045860866568
+Mean position error: 10.18385385083398
+Mean Mahalanobis error: 267.8818303005582
+ANEES: 89.2939434335194
 Data factor: 0.0625
 Filter factor: 0.0625
 --------------------------------------------------------------------------------
-Mean position error: 20.580867878482678
-Mean Mahalanobis error: 445.85981316805317
-ANEES: 148.6199377226844
+Mean position error: 11.743946841048658
+Mean Mahalanobis error: 90.39975305773908
+ANEES: 30.13325101924636
 Data factor: 0.0625
 Filter factor: 0.0625
 --------------------------------------------------------------------------------
-Mean position error: 11.687377008465106
-Mean Mahalanobis error: 13576.901164149982
-ANEES: 4525.633721383328
+Mean position error: 14.382665671158382
+Mean Mahalanobis error: 533.5999092858466
+ANEES: 177.86663642861552
 Data factor: 0.0625
 Filter factor: 0.0625
 --------------------------------------------------------------------------------
-Mean position error: 13.892606587459964
-Mean Mahalanobis error: 309.1627811987989
-ANEES: 103.05426039959963
+Mean position error: 22.182328587879653
+Mean Mahalanobis error: 4210.007363466336
+ANEES: 1403.335787822112
 Data factor: 0.0625
 Filter factor: 0.0625
 --------------------------------------------------------------------------------
-Mean position error: 9.448303573941917
-Mean Mahalanobis error: 274.56143082591205
-ANEES: 91.52047694197068
+Mean position error: 7.931717599140687
+Mean Mahalanobis error: 35.1500788049662
+ANEES: 11.716692934988734
 Data factor: 0.0625
 Filter factor: 0.0625
 --------------------------------------------------------------------------------
-Mean position error: 20.087290284582462
-Mean Mahalanobis error: 15912.652201258743
-ANEES: 5304.217400419581
+Mean position error: 10.595940516966662
+Mean Mahalanobis error: 336459.6624991458
+ANEES: 112153.22083304859
 Data factor: 0.0625
 Filter factor: 0.0625
 --------------------------------------------------------------------------------
-Mean position error: 12.592292029722762
-Mean Mahalanobis error: 133.58884015772892
-ANEES: 44.52961338590964
+Mean position error: 15.362732099641539
+Mean Mahalanobis error: 150.91027459603086
+ANEES: 50.30342486534362
 Data factor: 0.0625
 Filter factor: 0.0625
 --------------------------------------------------------------------------------
-Mean position error: 7.091208482648563
-Mean Mahalanobis error: 116.67576425604705
-ANEES: 38.89192141868235
+Mean position error: 8.269350043640054
+Mean Mahalanobis error: 72.55457956754988
+ANEES: 24.18485985584996
 Data factor: 0.0625
 Filter factor: 0.0625
 --------------------------------------------------------------------------------
-Mean position error: 9.427262407225369
-Mean Mahalanobis error: 52.05243842375619
-ANEES: 17.350812807918732
+Mean position error: 8.194797231611856
+Mean Mahalanobis error: 46.42773944786752
+ANEES: 15.475913149289175
 Data factor: 0.25
 Filter factor: 0.25
 --------------------------------------------------------------------------------
-Mean position error: 7.58752624952854
-Mean Mahalanobis error: 11.4851476334088
-ANEES: 3.8283825444696
+Mean position error: 28.368315356976492
+Mean Mahalanobis error: 1284.6006699242564
+ANEES: 428.20022330808547
 Data factor: 0.25
 Filter factor: 0.25
 --------------------------------------------------------------------------------
-Mean position error: 11.087168210693507
-Mean Mahalanobis error: 46.13074558877562
-ANEES: 15.376915196258539
+Mean position error: 11.199323137792213
+Mean Mahalanobis error: 37.050329187935176
+ANEES: 12.350109729311725
 Data factor: 0.25
 Filter factor: 0.25
 --------------------------------------------------------------------------------
-Mean position error: 14.708817116957333
-Mean Mahalanobis error: 17343.331342765632
-ANEES: 5781.110447588544
+Mean position error: 16.45809692555283
+Mean Mahalanobis error: 378.33857805276
+ANEES: 126.11285935092
 Data factor: 0.25
 Filter factor: 0.25
 --------------------------------------------------------------------------------
-Mean position error: 9.862859495116224
-Mean Mahalanobis error: 10.944993550742506
-ANEES: 3.648331183580835
+Mean position error: 12.071822613022475
+Mean Mahalanobis error: 46.38684185421129
+ANEES: 15.46228061807043
 Data factor: 0.25
 Filter factor: 0.25
 --------------------------------------------------------------------------------
-Mean position error: 10.731374418447182
-Mean Mahalanobis error: 239.26310056899933
-ANEES: 79.7543668563331
+Mean position error: 8.48401784138557
+Mean Mahalanobis error: 14.513433433797864
+ANEES: 4.837811144599288
 Data factor: 0.25
 Filter factor: 0.25
 --------------------------------------------------------------------------------
-Mean position error: 7.117877187752838
-Mean Mahalanobis error: 8.734726939839197
-ANEES: 2.911575646613066
+Mean position error: 13.968140856144803
+Mean Mahalanobis error: 652.7848057176146
+ANEES: 217.5949352392049
 Data factor: 0.25
 Filter factor: 0.25
 --------------------------------------------------------------------------------
-Mean position error: 7.481312148718553
-Mean Mahalanobis error: 18.827455693715205
-ANEES: 6.275818564571735
+Mean position error: 9.762061316298215
+Mean Mahalanobis error: 17.4637538703619
+ANEES: 5.821251290120633
 Data factor: 0.25
 Filter factor: 0.25
 --------------------------------------------------------------------------------
-Mean position error: 8.106415391190522
-Mean Mahalanobis error: 10.821715756651487
-ANEES: 3.607238585550496
+Mean position error: 10.430441640006586
+Mean Mahalanobis error: 98.24995795059563
+ANEES: 32.74998598353188
 Data factor: 0.25
 Filter factor: 0.25
 --------------------------------------------------------------------------------
-Mean position error: 15.101505016843213
-Mean Mahalanobis error: 82.89365621917997
-ANEES: 27.63121873972666
+Mean position error: 9.058258886990902
+Mean Mahalanobis error: 35.57066344437297
+ANEES: 11.856887814790989
 Data factor: 0.25
 Filter factor: 0.25
 --------------------------------------------------------------------------------
-Mean position error: 12.398713463783674
-Mean Mahalanobis error: 84.33347901040004
-ANEES: 28.111159670133347
+Mean position error: 32.725224351198506
+Mean Mahalanobis error: 3035.3989608463676
+ANEES: 1011.7996536154559
 Data factor: 4.0
 Filter factor: 4.0
 --------------------------------------------------------------------------------
-Mean position error: 19.871943491350052
-Mean Mahalanobis error: 164.72883529016815
-ANEES: 54.909611763389385
+Mean position error: 23.945464306881668
+Mean Mahalanobis error: 110.81442912863737
+ANEES: 36.938143042879126
 Data factor: 4.0
 Filter factor: 4.0
 --------------------------------------------------------------------------------
-Mean position error: 27.093346105433582
-Mean Mahalanobis error: 4979.445109383308
-ANEES: 1659.8150364611026
+Mean position error: 21.537014458127242
+Mean Mahalanobis error: 62.39552783784977
+ANEES: 20.798509279283255
 Data factor: 4.0
 Filter factor: 4.0
 --------------------------------------------------------------------------------
-Mean position error: 24.500537745801104
-Mean Mahalanobis error: 40.72720261052576
-ANEES: 13.575734203508587
+Mean position error: 26.635711206885272
+Mean Mahalanobis error: 60.15063133773135
+ANEES: 20.050210445910448
 Data factor: 4.0
 Filter factor: 4.0
 --------------------------------------------------------------------------------
-Mean position error: 28.21091175116574
-Mean Mahalanobis error: 117.48737180960245
-ANEES: 39.16245726986748
+Mean position error: 13.689251919833959
+Mean Mahalanobis error: 53.03223858092747
+ANEES: 17.677412860309158
 Data factor: 4.0
 Filter factor: 4.0
 --------------------------------------------------------------------------------
-Mean position error: 18.983874221341168
-Mean Mahalanobis error: 16.44466682718334
-ANEES: 5.481555609061114
+Mean position error: 50.13125827372147
+Mean Mahalanobis error: 217.90993176639915
+ANEES: 72.63664392213305
 Data factor: 4.0
 Filter factor: 4.0
 --------------------------------------------------------------------------------
-Mean position error: 49.60842684135645
-Mean Mahalanobis error: 294.8073363225704
-ANEES: 98.26911210752347
+Mean position error: 21.865819637739424
+Mean Mahalanobis error: 24.85330509133314
+ANEES: 8.28443503044438
 Data factor: 4.0
 Filter factor: 4.0
 --------------------------------------------------------------------------------
-Mean position error: 23.645717710058555
-Mean Mahalanobis error: 58.263409475901305
-ANEES: 19.4211364919671
+Mean position error: 26.81027257458709
+Mean Mahalanobis error: 259.9286038920369
+ANEES: 86.6428679640123
 Data factor: 4.0
 Filter factor: 4.0
 --------------------------------------------------------------------------------
-Mean position error: 28.99983036323306
-Mean Mahalanobis error: 87.08991986120242
-ANEES: 29.029973287067474
+Mean position error: 28.980533202578062
+Mean Mahalanobis error: 71.69029170775553
+ANEES: 23.896763902585178
 Data factor: 4.0
 Filter factor: 4.0
 --------------------------------------------------------------------------------
-Mean position error: 23.369654409374185
-Mean Mahalanobis error: 50.79237689459786
-ANEES: 16.930792298199286
+Mean position error: 23.509434989629227
+Mean Mahalanobis error: 84.17132925097059
+ANEES: 28.05710975032353
 Data factor: 4.0
 Filter factor: 4.0
 --------------------------------------------------------------------------------
-Mean position error: 22.859187819141106
-Mean Mahalanobis error: 234.10162356237163
-ANEES: 78.03387452079055
+Mean position error: 13.575330885892013
+Mean Mahalanobis error: 21.51409365778662
+ANEES: 7.1713645525955405
 Data factor: 16.0
 Filter factor: 16.0
 --------------------------------------------------------------------------------
-Mean position error: 96.37601612642449
-Mean Mahalanobis error: 283.821412486618
-ANEES: 94.60713749553933
+Mean position error: 23.874423564476903
+Mean Mahalanobis error: 18.478349949812888
+ANEES: 6.159449983270963
 Data factor: 16.0
 Filter factor: 16.0
 --------------------------------------------------------------------------------
-Mean position error: 41.15911290190843
-Mean Mahalanobis error: 57.44602665345419
-ANEES: 19.148675551151396
+Mean position error: 89.41987699247129
+Mean Mahalanobis error: 383.3806284584069
+ANEES: 127.79354281946895
 Data factor: 16.0
 Filter factor: 16.0
 --------------------------------------------------------------------------------
-Mean position error: 113.2497312955752
-Mean Mahalanobis error: 524.4108916872526
-ANEES: 174.80363056241754
+Mean position error: 40.949556628215184
+Mean Mahalanobis error: 42.89030143048476
+ANEES: 14.29676714349492
 Data factor: 16.0
 Filter factor: 16.0
 --------------------------------------------------------------------------------
-Mean position error: 85.6997434944423
-Mean Mahalanobis error: 649.5040221341186
-ANEES: 216.50134071137288
+Mean position error: 34.82777791566495
+Mean Mahalanobis error: 34.24205369340747
+ANEES: 11.41401789780249
 Data factor: 16.0
 Filter factor: 16.0
 --------------------------------------------------------------------------------
-Mean position error: 30.999769495806802
-Mean Mahalanobis error: 83.93534612243138
-ANEES: 27.978448707477128
+Mean position error: 44.785642057131874
+Mean Mahalanobis error: 113.48714300596406
+ANEES: 37.82904766865469
 Data factor: 16.0
 Filter factor: 16.0
 --------------------------------------------------------------------------------
-Mean position error: 54.879020008949986
-Mean Mahalanobis error: 519.8554515711165
-ANEES: 173.2851505237055
+Mean position error: 41.64255665953342
+Mean Mahalanobis error: 90.8731088558018
+ANEES: 30.291036285267268
 Data factor: 16.0
 Filter factor: 16.0
 --------------------------------------------------------------------------------
-Mean position error: 52.50743325322543
-Mean Mahalanobis error: 271.44942329060916
-ANEES: 90.48314109686972
+Mean position error: 27.307352746313253
+Mean Mahalanobis error: 26.326512933253134
+ANEES: 8.775504311084378
 Data factor: 16.0
 Filter factor: 16.0
 --------------------------------------------------------------------------------
-Mean position error: 72.25953895399346
-Mean Mahalanobis error: 84.36980387252541
-ANEES: 28.12326795750847
+Mean position error: 32.97527023701634
+Mean Mahalanobis error: 34.064880311816275
+ANEES: 11.354960103938758
 Data factor: 16.0
 Filter factor: 16.0
 --------------------------------------------------------------------------------
-Mean position error: 92.33426066813114
-Mean Mahalanobis error: 230.43627638068065
-ANEES: 76.81209212689355
+Mean position error: 44.406167608047674
+Mean Mahalanobis error: 115.82283873466282
+ANEES: 38.60761291155428
 Data factor: 16.0
 Filter factor: 16.0
 --------------------------------------------------------------------------------
-Mean position error: 41.62803511467464
-Mean Mahalanobis error: 93.99813712405529
-ANEES: 31.332712374685098
+Mean position error: 52.443074218280906
+Mean Mahalanobis error: 105.78938995770879
+ANEES: 35.26312998590293
 Data factor: 64.0
 Filter factor: 64.0
 --------------------------------------------------------------------------------
-Mean position error: 152.6720950309794
-Mean Mahalanobis error: 1217.890247896011
-ANEES: 405.963415965337
+Mean position error: 244.58397132086486
+Mean Mahalanobis error: 4517.956946140243
+ANEES: 1505.9856487134145
 Data factor: 64.0
 Filter factor: 64.0
 --------------------------------------------------------------------------------
-Mean position error: 70.51183438540765
-Mean Mahalanobis error: 112.47978394960464
-ANEES: 37.49326131653488
+Mean position error: 308.1830482029386
+Mean Mahalanobis error: 14972.35771912615
+ANEES: 4990.785906375383
 Data factor: 64.0
 Filter factor: 64.0
 --------------------------------------------------------------------------------
-Mean position error: 69.14677602919008
-Mean Mahalanobis error: 144.51127618989645
-ANEES: 48.17042539663215
+Mean position error: 72.76652681183786
+Mean Mahalanobis error: 99.32864026452931
+ANEES: 33.1095467548431
 Data factor: 64.0
 Filter factor: 64.0
 --------------------------------------------------------------------------------
-Mean position error: 67.25771956986634
-Mean Mahalanobis error: 99.74585661654677
-ANEES: 33.248618872182256
+Mean position error: 164.2574956368906
+Mean Mahalanobis error: 1356.5635668156094
+ANEES: 452.18785560520314
 Data factor: 64.0
 Filter factor: 64.0
 --------------------------------------------------------------------------------
-Mean position error: 219.92706898811267
-Mean Mahalanobis error: 694.1379356090769
-ANEES: 231.3793118696923
+Mean position error: 50.44174006331079
+Mean Mahalanobis error: 116.52648814592756
+ANEES: 38.842162715309186
 Data factor: 64.0
 Filter factor: 64.0
 --------------------------------------------------------------------------------
-Mean position error: 121.35681575961742
-Mean Mahalanobis error: 684.4378381543848
-ANEES: 228.1459460514616
+Mean position error: 110.30034059980807
+Mean Mahalanobis error: 400.57383403295506
+ANEES: 133.52461134431834
 Data factor: 64.0
 Filter factor: 64.0
 --------------------------------------------------------------------------------
-Mean position error: 138.3025402781873
-Mean Mahalanobis error: 507.3920794048827
-ANEES: 169.1306931349609
+Mean position error: 248.4151026725401
+Mean Mahalanobis error: 1059.2022254489805
+ANEES: 353.06740848299347
 Data factor: 64.0
 Filter factor: 64.0
 --------------------------------------------------------------------------------
-Mean position error: 74.08011336490685
-Mean Mahalanobis error: 85.7753781410038
-ANEES: 28.59179271366793
+Mean position error: 92.41981762556563
+Mean Mahalanobis error: 171.34442389115372
+ANEES: 57.11480796371791
 Data factor: 64.0
 Filter factor: 64.0
 --------------------------------------------------------------------------------
-Mean position error: 235.25056703090976
-Mean Mahalanobis error: 258.1332220089091
-ANEES: 86.04440733630304
+Mean position error: 194.51775228283702
+Mean Mahalanobis error: 2543.0430829921934
+ANEES: 847.6810276640645
 Data factor: 64.0
 Filter factor: 64.0
 --------------------------------------------------------------------------------
-Mean position error: 170.92827361878935
-Mean Mahalanobis error: 612.5479937872835
-ANEES: 204.18266459576117
+Mean position error: 404.2329913669786
+Mean Mahalanobis error: 1244.5739587985352
+ANEES: 414.8579862661784

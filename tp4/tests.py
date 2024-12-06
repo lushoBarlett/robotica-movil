@@ -13,32 +13,36 @@ COLORS = ["#2f6794", "#7f8ff0", "#4c902c", "#20f070", "#a62728", "#f99098"]
 PARTICLES = [20, 50, 500]
 
 
-def test_ekf():
+def test_ekf(both_factors=True):
     print("Running EKF tests")
 
-    with open("ekf.txt", "w") as f:
-        f.write("")
-
     for i in R:
         print(f"Running 10 runs for r = {i}")
         for _ in range(10):
-            command = f"python localization.py ekf --data-factor {i} --filter-factor {i} >> ekf.txt"
+
+            d = f"--data-factor {i}" if both_factors else ""
+            f = f"--filter-factor {i}"
+            ext = ".both.txt" if both_factors else ".txt"
+
+            command = f"python localization.py ekf {d} {f} >> ekf{ext}"
             print("$", command)
-            os.system(f"python localization.py ekf --data-factor {i} --filter-factor {i} >> ekf.txt")
+            os.system(f"python localization.py ekf {d} {f} >> ekf{ext}")
 
 
-def test_pf():
+def test_pf(both_factors=True):
     print("Running PF tests")
 
-    with open("pf.txt", "w") as f:
-        f.write("")
-
     for i in R:
         print(f"Running 10 runs for r = {i}")
         for _ in range(10):
-            command = f"python localization.py pf --data-factor {i} --filter-factor {i} >> pf.txt"
+
+            d = f"--data-factor {i}" if both_factors else ""
+            f = f"--filter-factor {i}"
+            ext = ".both.txt" if both_factors else ".txt"
+
+            command = f"python localization.py pf {d} {f} >> pf{ext}"
             print("$", command)
-            os.system(f"python localization.py pf --data-factor {i} --filter-factor {i} >> pf.txt")
+            os.system(f"python localization.py pf {d} {f} >> pf{ext}")
 
 
 def test_pf_extensive():
@@ -129,10 +133,10 @@ def style_normalized(x, ys, names):
 
 
 def plot_data_from_runs(runs: list[Run]) -> tuple[list[float], list[float], list[float]]:
-    x = sorted(set(run.data_factor for run in runs))
+    x = sorted(set(run.filter_factor for run in runs))
     y = []; y2 = []
     for r in x:
-        runs_r = [run for run in runs if run.data_factor == r]
+        runs_r = [run for run in runs if run.filter_factor == r]
 
         mean_errors = [run.mean_error for run in runs_r]
         avg_mean_error = sum(mean_errors) / len(mean_errors)
@@ -154,7 +158,8 @@ resultados.
 Graficar el error de posición medio y ANEES a medida que los factores α, β del filtro varían sobre
 r mientras los datos son generados con los valores por defecto.
 """
-def plot(runs: list[Run], prefix: str = "", log=False, title=None):
+def plot(algo: str, log=False, title=None):
+    runs = read_run(f"{algo}.both.txt")
     x, y, y2 = plot_data_from_runs(runs)
 
     plt.figure(figsize=(10, 6), dpi=120)
@@ -162,15 +167,18 @@ def plot(runs: list[Run], prefix: str = "", log=False, title=None):
     plt.xscale("log" if log else "linear")
     plt.xlabel("r" + (" (log scale)" if log else ""))
     style_normalized(x, [y], ["Mean position error (normalized)"])
-    plt.savefig(prefix + "mean_position_error.png")
+    plt.savefig(algo + "_mean_position_error.png")
     plt.show()
+
+    runs = read_run(f"{algo}.txt")
+    x, y, y2 = plot_data_from_runs(runs)
 
     plt.figure(figsize=(10, 6), dpi=120)
     plt.title(title)
     plt.xscale("log" if log else "linear")
     plt.xlabel("r" + (" (log scale)" if log else ""))
     style_normalized(x, [y, y2], ["Mean position error (normalized)", "ANEES (normalized)"])
-    plt.savefig(prefix + "mean_position_error_and_anees.png")
+    plt.savefig(algo + "_mean_position_error_and_anees.png")
     plt.show()
 
 
@@ -189,12 +197,17 @@ def read_run(filename: str):
 
 if __name__ == "__main__":
     # used in the first run because it takes a long time
-    # test_ekf()
-    # test_pf()
+
+    # test_ekf(both_factors=True)
+    # test_ekf(both_factors=False)
+
+    # test_pf(both_factors=True)
+    # test_pf(both_factors=False)
+
     # test_pf_extensive()
 
-    plot(read_run("ekf.txt"), "ekf_", log=True, title="Extended Kalman Filter")
-    plot(read_run("pf.txt"), "pf_", log=True, title="Particle Filter")
+    plot("ekf", log=True, title="Extended Kalman Filter")
+    plot("pf", log=True, title="Particle Filter")
 
     plt.figure(figsize=(10, 6), dpi=120)
     plt.title("Particle Filter with different number of particles")
