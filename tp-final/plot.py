@@ -3,7 +3,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D  # type: ignore
 
 
-def plot_3d_points(points1: np.ndarray, points2: np.ndarray) -> None:
+def plot_3d_points(points1: np.ndarray, points2: np.ndarray, filename: str) -> None:
     """Plot two sets of 3D points. Indicating what the first point of each set is."""
     fig = plt.figure()
     ax: Axes3D = fig.add_subplot(111, projection="3d")
@@ -28,4 +28,4 @@ def plot_3d_points(points1: np.ndarray, points2: np.ndarray) -> None:
     ax.set_zlabel("Z")
     ax.legend()
 
-    plt.show()
+    plt.savefig(f"plots/{filename}")

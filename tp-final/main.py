@@ -68,7 +68,10 @@ def main() -> None:
         required=True,
     )
     parser.add_argument(
-        "--plot", action="store_true", help="Whether to plot the results"
+        "--save_plot",
+        type=str,
+        default=None,
+        help="Path to save the plot, e.g., plot.png",
     )
 
     args = parser.parse_args()
@@ -96,8 +99,8 @@ def main() -> None:
     for i, threshold in enumerate(args.thresholds):
         print(f"AUC score (threshold : {threshold}): {auc_scores[i]:.4f}")
 
-    if args.plot:
-        plot_3d_points(points1, points2)
+    if args.save_plot is not None:
+        plot_3d_points(points1, points2, args.save_plot)
 
 
 if __name__ == "__main__":
