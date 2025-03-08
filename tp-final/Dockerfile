@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app
 
+RUN mkdir -p /app/plots
+
 ENV MPLBACKEND=Agg
 
 ENTRYPOINT ["python", "./main.py"]
